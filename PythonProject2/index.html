@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI网页生成器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2563eb',
+            panel: '#1e293b',
+            codeBg: '#1e293b'
+          }
+        }
+      }
+    }
+  </script>
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+      }
+      .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #555;
+        border-radius: 3px;
+      }
+      .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .resizer {
+        width: 6px;
+        background: #475569;
+        cursor: col-resize;
+        user-select: none;
+        transition: background 0.2s ease;
+      }
+      .resizer:hover {
+        background: #60a5fa;
+      }
+      .spin {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .msg-fade-in {
+        animation: fadeIn 0.35s ease-out;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+    }
+  </style>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body, html {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .container-row {
+      display: flex;
+      height: 100vh;
+    }
+    .col-left, .col-middle, .col-right {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+    }
+    #sendBtn {
+      transition: all 0.25s ease;
+    }
+    /* api key modal */
+    #apiKeyModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #apiKeyModal.hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white">
+
+<!-- API Key输入弹窗，仅输入LLM_API_KEY，其他智谱参数写死在代码 -->
+<div id="apiKeyModal" class="hidden">
+  <div class="bg-panel p-6 rounded-lg w-full max-w-md border border-gray-700">
+    <h2 class="text-lg font-bold mb-2">配置智谱API Key</h2>
+    <p class="text-gray-400 text-sm mb-4">仅输入你的API‑Key，接口地址与模型名称已内置。密钥仅保存在浏览器本地 localStorage。</p>
+    <input id="apiKeyInput" type="password" placeholder="输入你的智谱API Key"
+           class="w-full bg-gray-800 rounded p-2 border border-gray-600 focus:border-blue-400 outline-none mb-4 text-white">
+    <div id="modalTip" class="text-sm mb-3 h-5"></div>
+    <button id="modalConnectBtn" class="w-full bg-primary py-2 rounded hover:bg-blue-600 transition">验证并进入应用</button>
+  </div>
+</div>
+
+<div id="mainAppWrap" class="hidden">
+<div class="container-row">
+  <!-- ========== 左侧 对话栏 ========== -->
+  <div class="col-left bg-panel border-r border-gray-700" id="colLeft" style="width:320px;min-width:220px;">
+    <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+      <h2 class="text-lg font-bold text-white">智能体对话</h2>
+      <div class="flex gap-2">
+        <button id="newSessionBtn" class="bg-primary px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">新建会话</button>
+        <button id="clearChatBtn" class="bg-gray-600 px-3 py-1 rounded text-sm hover:bg-gray-500 transition-colors">清空对话</button>
+        <button id="clearApiKeyBtn" class="bg-red-700 px-2 py-1 rounded text-xs hover:bg-red-600">清除Key</button>
+      </div>
+    </div>
+    <div id="chatContainer" class="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-3"></div>
+    <div class="p-3 border-t border-gray-700">
+      <textarea id="userInput" class="w-full bg-gray-800 rounded p-2 h-24 resize-none outline-none border border-gray-600 text-white transition-colors focus:border-blue-400" placeholder="输入你的想法，例如：做一个番茄钟网页 / 画一个太阳"></textarea>
+      <button id="sendBtn" class="w-full mt-2 bg-primary py-2 rounded hover:bg-blue-600 flex items-center justify-center gap-2 text-white">
+        <i class="fa fa-paper-plane"></i> 发送，让AI生成应用
+      </button>
+    </div>
+  </div>
+  <div class="resizer" id="resizer1"></div>
+  <!-- ========== 中间 代码栏 ========== -->
+  <div class="col-middle bg-codeBg border-r border-gray-700" id="colMiddle" style="flex:1;min-width:280px;">
+    <div class="p-3 border-b border-gray-600 flex justify-between">
+      <h2 class="font-bold text-white">生成代码</h2>
+      <button id="exportBtn" class="bg-green-600 px-3 py-1 rounded text-sm hover:bg-green-700 text-white transition-colors">
+        <i class="fa fa-download"></i> 导出HTML
+      </button>
+    </div>
+    <textarea id="codeEditor" class="flex-1 w-full bg-transparent p-3 text-sm font-mono outline-none resize-none scrollbar-thin text-white overflow-y-auto" spellcheck="false"></textarea>
+  </div>
+  <div class="resizer" id="resizer2"></div>
+  <!-- ========== 右侧 预览栏 ========== -->
+  <div class="col-right bg-white" id="colRight" style="flex:1;min-width:280px;">
+    <div class="p-3 border-b border-gray-200">
+      <h2 class="font-bold text-gray-800">应用预览（可交互）</h2>
+    </div>
+    <iframe id="previewIframe" sandbox="allow-scripts" class="flex-1 w-full bg-white" style="border:none;"></iframe>
+  </div>
+</div>
+</div>
+
+<script>
+// ====================== 智谱固定配置 ======================
+const LLM_BASE_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+const MODEL_CODE = "glm-4-flash";      // 普通代码生成
+const MODEL_DRAW = "glm-4v-flash";     // 绘图/图片生成
+const LLM_TEMPERATURE = 0.7;
+const LLM_TIMEOUT_MS = 60000;
+// 绘图意图关键词
+const DRAW_KEYWORDS = ["画","图","图标","绘制","图形","画像","画画","图案"];
+// =========================================================================
+
+const STORAGE_API_KEY = "demo_llm_api_key";
+const LAYOUT_STORAGE_KEY = "three-column-layout-width";
+const STORAGE_KEY = "atoms-demo-session";
+
+// 弹窗DOM
+const apiKeyModal = document.getElementById("apiKeyModal");
+const apiKeyInput = document.getElementById("apiKeyInput");
+const modalConnectBtn = document.getElementById("modalConnectBtn");
+const modalTip = document.getElementById("modalTip");
+const mainAppWrap = document.getElementById("mainAppWrap");
+
+let LLM_API_KEY = "";
+let isTyping = false;
+
+// XSS转义
+function escapeHtml(str) {
+  if (!str) return "";
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// 判断是否是绘图类请求
+function isDrawPrompt(text){
+  return DRAW_KEYWORDS.some(k => text.includes(k));
+}
+
+// 校验API Key连通性
+async function testApiKey(key) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const resp = await fetch(LLM_BASE_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: MODEL_CODE,
+        messages: [{ role: "user", content: "hi" }],
+        max_tokens: 5
+      }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    return resp.ok;
+  } catch (e) {
+    clearTimeout(timer);
+    return false;
+  }
+}
+
+// 回到密钥输入页面
+function backToKeyModal() {
+  LLM_API_KEY = "";
+  mainAppWrap.classList.add("hidden");
+  apiKeyModal.classList.remove("hidden");
+  apiKeyInput.value = "";
+  modalTip.textContent = "";
+}
+
+// 初始化密钥流程
+async function initKeyFlow() {
+  const saved = localStorage.getItem(STORAGE_API_KEY);
+  if (saved) {
+    LLM_API_KEY = saved;
+    const ok = await testApiKey(LLM_API_KEY);
+    if (ok) {
+      enterMainApp();
+      return;
+    } else {
+      localStorage.removeItem(STORAGE_API_KEY);
+    }
+  }
+  apiKeyModal.classList.remove("hidden");
+}
+
+// 弹窗连接按钮
+modalConnectBtn.onclick = async () => {
+  const val = apiKeyInput.value.trim();
+  if (!val) {
+    modalTip.textContent = "请输入API Key";
+    modalTip.className = "text-sm mb-3 h-5 text-red-400";
+    return;
+  }
+  modalConnectBtn.disabled = true;
+  modalConnectBtn.textContent = "正在验证...";
+  modalTip.textContent = "";
+
+  LLM_API_KEY = val;
+  const ok = await testApiKey(val);
+  if (ok) {
+    localStorage.setItem(STORAGE_API_KEY, val);
+    modalTip.textContent = "✅ 验证成功";
+    modalTip.className = "text-sm mb-3 h-5 text-green-400";
+    setTimeout(enterMainApp, 600);
+  } else {
+    modalTip.textContent = "❌ Key校验失败，请检查";
+    modalTip.className = "text-sm mb-3 h-5 text-red-400";
+  }
+  modalConnectBtn.disabled = false;
+  modalConnectBtn.textContent = "验证并进入应用";
+};
+
+function enterMainApp() {
+  apiKeyModal.classList.add("hidden");
+  mainAppWrap.classList.remove("hidden");
+  bootstrapApp();
+}
+
+document.getElementById("clearApiKeyBtn").onclick = () => {
+  localStorage.removeItem(STORAGE_API_KEY);
+  backToKeyModal();
+};
+
+// ====================== 主应用代码 ======================
+let sessionData = {
+  messages: [],
+  generatedCode: ""
+};
+
+function makeResizable(container, leftCol, resizer, rightCol) {
+  resizer.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    const startX = e.pageX;
+    const startLeftWidth = leftCol.offsetWidth;
+    const containerWidth = container.clientWidth;
+    const minW = parseInt(leftCol.style.minWidth);
+    const maxW = containerWidth - 580;
+
+    function mouseMove(e) {
+      const deltaX = e.pageX - startX;
+      let newWidth = startLeftWidth + deltaX;
+      newWidth = Math.max(minW, Math.min(newWidth, maxW));
+      leftCol.style.width = newWidth + "px";
+      leftCol.style.flex = "none";
+    }
+    function mouseUp() {
+      document.removeEventListener('mousemove', mouseMove);
+      document.removeEventListener('mouseup', mouseUp);
+      saveLayoutWidth();
+    }
+    document.addEventListener('mousemove', mouseMove);
+    document.addEventListener('mouseup', mouseUp);
+  })
+}
+
+function saveLayoutWidth() {
+  const layout = {
+    leftW: document.getElementById("colLeft").offsetWidth,
+    middleW: document.getElementById("colMiddle").offsetWidth,
+    rightW: document.getElementById("colRight").offsetWidth,
+  }
+  try {
+    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(layout));
+  } catch (err) {
+    console.warn("保存布局失败", err);
+  }
+}
+
+function loadLayoutWidth() {
+  try {
+    const saved = localStorage.getItem(LAYOUT_STORAGE_KEY);
+    if (!saved) return;
+    const layout = JSON.parse(saved);
+    const colLeft = document.getElementById("colLeft");
+    const colMiddle = document.getElementById("colMiddle");
+    const colRight = document.getElementById("colRight");
+    colLeft.style.width = layout.leftW + "px";
+    colLeft.style.flex = "none";
+    colMiddle.style.width = layout.middleW + "px";
+    colMiddle.style.flex = "none";
+    colRight.style.width = layout.rightW + "px";
+    colRight.style.flex = "none";
+  } catch (e) {
+    console.warn("布局配置损坏，使用默认布局");
+  }
+}
+
+const colLeft = document.getElementById("colLeft");
+const colMiddle = document.getElementById("colMiddle");
+const resizer1 = document.getElementById("resizer1");
+const resizer2 = document.getElementById("resizer2");
+
+const chatContainer = document.getElementById("chatContainer");
+const userInput = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const newSessionBtn = document.getElementById("newSessionBtn");
+const clearChatBtn = document.getElementById("clearChatBtn");
+const codeEditor = document.getElementById("codeEditor");
+const previewIframe = document.getElementById("previewIframe");
+const exportBtn = document.getElementById("exportBtn");
+
+const systemPrompt = `你是一个前端工程师。用户会给你产品需求或修改要求。
+输出规则：首先输出你的思考过程，描述你准备如何实现这个网页功能；之后直接输出完整可独立运行的HTML文件。
+禁止输出任何markdown标题、额外解释说明。不要使用代码块标记。
+输出结构：
+【思考】
+你的思考内容，分析需求，描述实现思路。
+【HTML】
+<!DOCTYPE html>
+完整HTML全部内容，以</html>结尾。
+⚠️ 【重要强制规则】</html>后面**绝对不能**添加任何文字、解释、备注。输出到</html>立刻停止。
+
+CSS 使用 <style> 标签内嵌，JavaScript 使用 <script> 标签内嵌。
+🚫【强制禁止】不要调用任何外部API、天气接口、网络请求、CDN、外部图片、外部字体。所有数据全部本地JS计算生成。
+🚫【图片绘图强制规则】当需求需要图片、图形、图标、绘画效果，全部使用纯CSS实现，使用div元素搭配border‑radius、clip‑path、linear‑gradient、box‑shadow、transform绘制；禁止使用img标签、禁止引入图片资源、禁止使用svg标签。
+生成的页面必须有真实交互逻辑，例如按钮点击、输入框操作、状态变化、计数、列表增删等。
+页面结构完整，包含 <!DOCTYPE html>、<html>、<head>、<meta charset>、<title>、<body>。
+如果用户需求包含天气、联网数据，不要请求网络，直接用本地模拟文字展示。
+仔细实现需求中的UI细节，例如五瓣花朵、特殊形状，不要偷懒只用圆形代替。`;
+
+// ========== 修复后的解析函数 ==========
+function parseThinkAndHtml(rawText) {
+  const thinkMark = "【思考】";
+  const htmlMark = "【HTML】";
+  let thinkText = "";
+  let htmlText = "";
+  const idxThink = rawText.indexOf(thinkMark);
+  const idxHtml = rawText.indexOf(htmlMark);
+
+  if(idxThink !== -1 && idxHtml !== -1 && idxHtml > idxThink){
+    thinkText = rawText.substring(idxThink + thinkMark.length, idxHtml).trim();
+    const htmlRaw = rawText.substring(idxHtml + htmlMark.length).trim();
+    // 只截取从<!DOCTYPE html> 到 </html> 的部分，后面文字全部丢弃
+    const startHtml = htmlRaw.indexOf('<!DOCTYPE html>');
+    const endHtml = htmlRaw.lastIndexOf('</html>');
+    if (startHtml !== -1 && endHtml !== -1) {
+      htmlText = htmlRaw.substring(startHtml, endHtml + 7).trim();
+    }
+  }else{
+    // 兜底降级
+    const startHtml = rawText.indexOf('<!DOCTYPE html>');
+    const endHtml = rawText.lastIndexOf('</html>');
+    if (startHtml !== -1 && endHtml !== -1) {
+      htmlText = rawText.substring(startHtml, endHtml + 7).trim();
+    }
+    thinkText = rawText.replace(htmlText,"").trim();
+  }
+  if(!htmlText.includes("<!DOCTYPE html>")){
+    throw new Error("返回内容不是有效HTML");
+  }
+  return {thinkText, htmlText};
+}
+
+function loadSession() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      sessionData = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.warn("会话数据损坏，重置会话");
+    sessionData = { messages: [], generatedCode: "" };
+  }
+  renderChat();
+  codeEditor.value = sessionData.generatedCode;
+  renderPreview(sessionData.generatedCode);
+}
+
+function saveSession() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+  } catch (err) {
+    console.warn("localStorage存储超限，保存会话失败", err);
+  }
+}
+
+function renderChat(loadingIndex = -1) {
+  chatContainer.innerHTML = "";
+  sessionData.messages.forEach((msg, index) => {
+    const div = document.createElement("div");
+    div.classList.add("msg-fade-in");
+    if (msg.role === "user") {
+      div.className += " bg-blue-800 p-3 rounded-md text-white";
+      div.innerHTML = `<div class="text-sm opacity-80 mb-1">你</div>${escapeHtml(msg.content)}`;
+    } else {
+      if (loadingIndex === index) {
+        div.className += " bg-gray-700 p-3 rounded-md text-white";
+        div.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-2"><i class="fa fa-circle-o-notch spin text-lg"></i> 正在生成代码，请稍候…</div>`;
+      } else if (msg.error) {
+        div.className += " bg-red-900/70 p-3 rounded-md text-white";
+        div.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-times"></i> ${escapeHtml(msg.content)}</div>`;
+      } else {
+        div.className += " bg-gray-700 p-3 rounded-md text-white";
+        div.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(msg.content)}</div>`;
+      }
+    }
+    chatContainer.appendChild(div);
+  })
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+async function typeWriter(element, fullText, speed = 45) {
+  isTyping = true;
+  try {
+    let currentText = "";
+    for (let i = 0; i < fullText.length; i++) {
+      currentText += fullText[i];
+      element.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(currentText)}<span class="opacity-70">|</span></div>`;
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      await new Promise(resolve => setTimeout(resolve, speed));
+    }
+    element.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(fullText)}</div>`;
+  } finally {
+    isTyping = false;
+  }
+}
+
+function renderPreview(html) {
+  sessionData.generatedCode = html;
+  codeEditor.value = html;
+  saveSession();
+  previewIframe.srcdoc = html;
+}
+
+async function callGLM(prompt, isDraw) {
+  const model = isDraw ? MODEL_DRAW : MODEL_CODE;
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...sessionData.messages.filter(m => m.content !== "loading"),
+    { role: "user", content: prompt }
+  ]
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
+
+  try {
+    const resp = await fetch(LLM_BASE_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LLM_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: messages,
+        temperature: LLM_TEMPERATURE
+      }),
+      signal: controller.signal
+    })
+    clearTimeout(timeoutId);
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+    const json = await resp.json();
+    if (!json.choices || json.choices.length === 0) {
+      throw new Error("模型返回异常");
+    }
+    const raw = json.choices[0].message.content.trim();
+    const {thinkText, htmlText} = parseThinkAndHtml(raw);
+    return {thinkText, htmlText};
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
+
+sendBtn.onclick = async () => {
+  const content = userInput.value.trim();
+  if (!content || isTyping) return;
+  sendBtn.disabled = true;
+  sendBtn.classList.add("opacity-60", "cursor-not-allowed");
+  sendBtn.innerHTML = `<i class="fa fa-circle-o-notch spin"></i> 正在生成…`;
+  codeEditor.readOnly = true;
+  codeEditor.classList.add("opacity-60");
+
+  sessionData.messages.push({ role: "user", content });
+  sessionData.messages.push({ role: "assistant", content: "loading" });
+  const loadingMsgIndex = sessionData.messages.length - 1;
+  userInput.value = "";
+  renderChat(loadingMsgIndex);
+
+  try {
+    const drawFlag = isDrawPrompt(content);
+    const {thinkText, htmlText} = await callGLM(content, drawFlag);
+    sessionData.messages[loadingMsgIndex] = { role: "assistant", content: thinkText || "✅ 已生成网页应用代码" };
+    renderChat();
+    const msgDom = chatContainer.lastElementChild;
+    await typeWriter(msgDom, sessionData.messages[loadingMsgIndex].content);
+    renderPreview(htmlText);
+  } catch (err) {
+    sessionData.messages[loadingMsgIndex] = { role: "assistant", content: "生成失败：" + err.message, error: true };
+    renderChat();
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.classList.remove("opacity-60", "cursor-not-allowed");
+    sendBtn.innerHTML = `<i class="fa fa-paper-plane"></i> 发送，让AI生成应用`;
+    codeEditor.readOnly = false;
+    codeEditor.classList.remove("opacity-60");
+    saveSession();
+  }
+}
+
+// 新建会话：清空对话+清空代码+清空预览
+newSessionBtn.onclick = () => {
+  if (isTyping) return;
+  sessionData = { messages: [], generatedCode: "" };
+  saveSession();
+  renderChat();
+  codeEditor.value = "";
+  previewIframe.srcdoc = "";
+}
+
+// 仅清空对话框：清空messages，保留代码和预览
+clearChatBtn.onclick = () => {
+  if(isTyping) return;
+  sessionData.messages = [];
+  saveSession();
+  renderChat();
+}
+
+exportBtn.onclick = () => {
+  const html = codeEditor.value;
+  if (!html.trim()) {
+    exportBtn.textContent = "暂无代码";
+    setTimeout(() => exportBtn.innerHTML = `<i class="fa fa-download"></i> 导出HTML`, 1200);
+    return;
+  }
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "output.html";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+codeEditor.oninput = () => {
+  renderPreview(codeEditor.value);
+}
+
+function bootstrapApp() {
+  makeResizable(document.querySelector(".container-row"), colLeft, resizer1, colMiddle);
+  makeResizable(document.querySelector(".container-row"), colMiddle, resizer2, document.getElementById("colRight"));
+  loadLayoutWidth();
+  loadSession();
+}
+
+window.onload = function () {
+  initKeyFlow();
+}
+</script>
+</body>
+</html>

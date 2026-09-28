@@ -95,8 +95,6 @@
   </style>
 </head>
 <body class="bg-gray-900 text-white">
-
-<!-- API Key输入弹窗，仅输入LLM_API_KEY，其他智谱参数写死在代码 -->
 <div id="apiKeyModal" class="hidden">
   <div class="bg-panel p-6 rounded-lg w-full max-w-md border border-gray-700">
     <h2 class="text-lg font-bold mb-2">配置智谱API Key</h2>
@@ -107,10 +105,8 @@
     <button id="modalConnectBtn" class="w-full bg-primary py-2 rounded hover:bg-blue-600 transition">验证并进入应用</button>
   </div>
 </div>
-
 <div id="mainAppWrap" class="hidden">
 <div class="container-row">
-  <!-- ========== 左侧 对话栏 ========== -->
   <div class="col-left bg-panel border-r border-gray-700" id="colLeft" style="width:320px;min-width:220px;">
     <div class="p-4 border-b border-gray-700 flex justify-between items-center">
       <h2 class="text-lg font-bold text-white">智能体对话</h2>
@@ -129,69 +125,94 @@
     </div>
   </div>
   <div class="resizer" id="resizer1"></div>
-  <!-- ========== 中间 代码栏 ========== -->
   <div class="col-middle bg-codeBg border-r border-gray-700" id="colMiddle" style="flex:1;min-width:280px;">
-    <div class="p-3 border-b border-gray-600 flex justify-between">
+    <div class="p-3 border-b border-gray-600 flex justify-between gap-2">
       <h2 class="font-bold text-white">生成代码</h2>
-      <button id="exportBtn" class="bg-green-600 px-3 py-1 rounded text-sm hover:bg-green-700 text-white transition-colors">
-        <i class="fa fa-download"></i> 导出HTML
-      </button>
+      <div class="flex gap-2">
+        <button id="reviewBtn" class="bg-orange-600 px-3 py-1 rounded text-sm hover:bg-orange-700 text-white transition-colors">
+          <i class="fa fa-search"></i> AI代码评审
+        </button>
+        <button id="exportBtn" class="bg-green-600 px-3 py-1 rounded text-sm hover:bg-green-700 text-white transition-colors">
+          <i class="fa fa-download"></i> 导出HTML
+        </button>
+      </div>
     </div>
     <textarea id="codeEditor" class="flex-1 w-full bg-transparent p-3 text-sm font-mono outline-none resize-none scrollbar-thin text-white overflow-y-auto" spellcheck="false"></textarea>
   </div>
   <div class="resizer" id="resizer2"></div>
-  <!-- ========== 右侧 预览栏 ========== -->
   <div class="col-right bg-white" id="colRight" style="flex:1;min-width:280px;">
     <div class="p-3 border-b border-gray-200">
       <h2 class="font-bold text-gray-800">应用预览（可交互）</h2>
     </div>
-    <iframe id="previewIframe" sandbox="allow-scripts" class="flex-1 w-full bg-white" style="border:none;"></iframe>
+    <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin" class="flex-1 w-full bg-white" style="border:none;"></iframe>
   </div>
 </div>
 </div>
-
 <script>
-// ====================== 智谱固定配置 ======================
 const LLM_BASE_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-const MODEL_CODE = "glm-4-flash";      // 普通代码生成
-const MODEL_DRAW = "glm-4v-flash";     // 绘图/图片生成
+const MODEL_CODE = "glm-4-flash";
+const MODEL_DRAW = "glm-4v-flash";
 const LLM_TEMPERATURE = 0.7;
-const LLM_TIMEOUT_MS = 60000;
-// 绘图意图关键词
+const LLM_TIMEOUT_MS = 120000;
 const DRAW_KEYWORDS = ["画","图","图标","绘制","图形","画像","画画","图案"];
-// =========================================================================
-
 const STORAGE_API_KEY = "demo_llm_api_key";
 const LAYOUT_STORAGE_KEY = "three-column-layout-width";
 const STORAGE_KEY = "atoms-demo-session";
+const MAX_FIX_RETRY = 3; // 最大自动修复轮次，防止死循环
 
-// 弹窗DOM
 const apiKeyModal = document.getElementById("apiKeyModal");
 const apiKeyInput = document.getElementById("apiKeyInput");
 const modalConnectBtn = document.getElementById("modalConnectBtn");
 const modalTip = document.getElementById("modalTip");
 const mainAppWrap = document.getElementById("mainAppWrap");
-
 let LLM_API_KEY = "";
 let isTyping = false;
 
-// XSS转义
+// 监听iframe运行时消息：NaN告警、JS异常
+window.addEventListener('message',(evt)=>{
+  const data = evt.data;
+  if(!data || !data.type) return;
+  if(data.type === "WARN_NAN"){
+    sessionData.messages.push({
+      role:"assistant",
+      content:"🔴运行时告警："+data.msg,
+      error:true
+    });
+    renderChat();
+    saveSession();
+  }else if(data.type === "RUNTIME_ERROR"){
+    sessionData.messages.push({
+      role:"assistant",
+      content:`🟡运行时异常：${data.msg} 行:${data.line||''}`,
+      error:true
+    });
+    renderChat();
+    saveSession();
+  }else if(data.type === "PROMISE_REJECT"){
+    sessionData.messages.push({
+      role:"assistant",
+      content:`🟡Promise异常：${data.msg}`,
+      error:true
+    });
+    renderChat();
+    saveSession();
+  }
+});
+
 function escapeHtml(str) {
   if (!str) return "";
   return str
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
+    .replace( />/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
-// 判断是否是绘图类请求
 function isDrawPrompt(text){
   return DRAW_KEYWORDS.some(k => text.includes(k));
 }
 
-// 校验API Key连通性
 async function testApiKey(key) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
@@ -217,7 +238,6 @@ async function testApiKey(key) {
   }
 }
 
-// 回到密钥输入页面
 function backToKeyModal() {
   LLM_API_KEY = "";
   mainAppWrap.classList.add("hidden");
@@ -226,7 +246,6 @@ function backToKeyModal() {
   modalTip.textContent = "";
 }
 
-// 初始化密钥流程
 async function initKeyFlow() {
   const saved = localStorage.getItem(STORAGE_API_KEY);
   if (saved) {
@@ -242,7 +261,6 @@ async function initKeyFlow() {
   apiKeyModal.classList.remove("hidden");
 }
 
-// 弹窗连接按钮
 modalConnectBtn.onclick = async () => {
   const val = apiKeyInput.value.trim();
   if (!val) {
@@ -253,7 +271,6 @@ modalConnectBtn.onclick = async () => {
   modalConnectBtn.disabled = true;
   modalConnectBtn.textContent = "正在验证...";
   modalTip.textContent = "";
-
   LLM_API_KEY = val;
   const ok = await testApiKey(val);
   if (ok) {
@@ -276,11 +293,11 @@ function enterMainApp() {
 }
 
 document.getElementById("clearApiKeyBtn").onclick = () => {
+  if(!confirm("确定清除本地保存的APIKey吗？")) return;
   localStorage.removeItem(STORAGE_API_KEY);
   backToKeyModal();
 };
 
-// ====================== 主应用代码 ======================
 let sessionData = {
   messages: [],
   generatedCode: ""
@@ -291,14 +308,13 @@ function makeResizable(container, leftCol, resizer, rightCol) {
     e.preventDefault();
     const startX = e.pageX;
     const startLeftWidth = leftCol.offsetWidth;
-    const containerWidth = container.clientWidth;
-    const minW = parseInt(leftCol.style.minWidth);
-    const maxW = containerWidth - 580;
-
+    const minLeft = parseInt(leftCol.style.minWidth);
+    const minRight = parseInt(rightCol.style.minWidth);
     function mouseMove(e) {
       const deltaX = e.pageX - startX;
       let newWidth = startLeftWidth + deltaX;
-      newWidth = Math.max(minW, Math.min(newWidth, maxW));
+      const containerW = container.clientWidth;
+      newWidth = Math.max(minLeft, Math.min(newWidth, containerW - minRight));
       leftCol.style.width = newWidth + "px";
       leftCol.style.flex = "none";
     }
@@ -333,11 +349,15 @@ function loadLayoutWidth() {
     const colLeft = document.getElementById("colLeft");
     const colMiddle = document.getElementById("colMiddle");
     const colRight = document.getElementById("colRight");
-    colLeft.style.width = layout.leftW + "px";
+    const totalW = document.querySelector('.container-row').clientWidth;
+    let w1 = Math.min(layout.leftW, totalW * 0.4);
+    let w2 = Math.min(layout.middleW, totalW * 0.5);
+    let w3 = Math.min(layout.rightW, totalW * 0.5);
+    colLeft.style.width = w1 + "px";
     colLeft.style.flex = "none";
-    colMiddle.style.width = layout.middleW + "px";
+    colMiddle.style.width = w2 + "px";
     colMiddle.style.flex = "none";
-    colRight.style.width = layout.rightW + "px";
+    colRight.style.width = w3 + "px";
     colRight.style.flex = "none";
   } catch (e) {
     console.warn("布局配置损坏，使用默认布局");
@@ -348,7 +368,6 @@ const colLeft = document.getElementById("colLeft");
 const colMiddle = document.getElementById("colMiddle");
 const resizer1 = document.getElementById("resizer1");
 const resizer2 = document.getElementById("resizer2");
-
 const chatContainer = document.getElementById("chatContainer");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
@@ -357,57 +376,118 @@ const clearChatBtn = document.getElementById("clearChatBtn");
 const codeEditor = document.getElementById("codeEditor");
 const previewIframe = document.getElementById("previewIframe");
 const exportBtn = document.getElementById("exportBtn");
+const reviewBtn = document.getElementById("reviewBtn");
 
-const systemPrompt = `你是一个前端工程师。用户会给你产品需求或修改要求。
-输出规则：首先输出你的思考过程，描述你准备如何实现这个网页功能；之后直接输出完整可独立运行的HTML文件。
-禁止输出任何markdown标题、额外解释说明。不要使用代码块标记。
-输出结构：
+// 生成网页系统提示词（增加NaN防范约束）
+const systemPrompt = `你是前端工程师。接收用户需求，严格按格式输出。
+输出格式：
 【思考】
-你的思考内容，分析需求，描述实现思路。
+简短实现思路，一句话概括
 【HTML】
-<!DOCTYPE html>
-完整HTML全部内容，以</html>结尾。
-⚠️ 【重要强制规则】</html>后面**绝对不能**添加任何文字、解释、备注。输出到</html>立刻停止。
+完整可独立运行HTML，从<!DOCTYPE html>开始，必须输出到</html>结束，禁止提前截断输出。
+⚠️强制规则：
+1. CSS、JS全部内嵌，禁止外部CDN、外部图片、网络请求。
+2. 需要图形只用CSS绘制div，禁止img、svg标签。
+3. </html>后面不能附带任何文字、注释。
+4. 代码必须完整可交互，不要伪代码，不要省略逻辑。
+5. ⚠️JS数值处理：必须防范产生NaN；数值运算前校验变量不为undefined/null；除法、数学运算做边界判断；渲染页面时禁止直接输出NaN字符串到DOM。`;
 
-CSS 使用 <style> 标签内嵌，JavaScript 使用 <script> 标签内嵌。
-🚫【强制禁止】不要调用任何外部API、天气接口、网络请求、CDN、外部图片、外部字体。所有数据全部本地JS计算生成。
-🚫【图片绘图强制规则】当需求需要图片、图形、图标、绘画效果，全部使用纯CSS实现，使用div元素搭配border‑radius、clip‑path、linear‑gradient、box‑shadow、transform绘制；禁止使用img标签、禁止引入图片资源、禁止使用svg标签。
-生成的页面必须有真实交互逻辑，例如按钮点击、输入框操作、状态变化、计数、列表增删等。
-页面结构完整，包含 <!DOCTYPE html>、<html>、<head>、<meta charset>、<title>、<body>。
-如果用户需求包含天气、联网数据，不要请求网络，直接用本地模拟文字展示。
-仔细实现需求中的UI细节，例如五瓣花朵、特殊形状，不要偷懒只用圆形代替。`;
+// 评审systemPrompt（增加NaN、undefined专项检查）
+const testReviewSystemPrompt = `你是软件测试工程师，对传入的完整网页HTML代码做代码评审。
+任务：只做审查，不要修改代码，不要输出完整HTML。
+输出格式：
+### 代码评审报告
+【语法风险】：列出JS/CSS/HTML语法相关问题，无则写“未发现”
+【交互&事件风险】：按钮、键盘、输入框、点击、键盘监听等事件绑定、执行逻辑缺陷
+【业务逻辑风险】：业务算法、状态更新、数据处理、边界条件异常（空值、越界、重复执行、⚠️NaN、undefined参与数值运算）
+【UI渲染风险】：DOM渲染缺失、样式异常、布局错乱、元素直接渲染出NaN/undefined文本到页面上等
+【其他潜在风险】：其他隐患
 
-// ========== 修复后的解析函数 ==========
+每条问题标注风险等级：🔴高 / 🟡中 / 🟢低。
+只要报告中存在🔴高风险就代表代码存在必须修复的严重bug。
+如果代码存在数值运算，重点检查是否会产生NaN，是否直接把NaN渲染到DOM。
+如果没有问题，如实写“未检测到明显缺陷，但不代表逻辑完全正确，仍需要手动实际测试”。
+不要编造不存在的bug。不要输出修复后的代码。`;
+
+// 代码修复 systemPrompt
+const fixCodeSystemPrompt = `你是前端工程师。你会收到原始HTML代码 + 一份测试评审bug报告。
+任务：根据bug报告修复网页全部问题。严格遵守输出格式。
+输出格式：
+【思考】
+描述本次修复修改了哪些bug，简短说明。
+【HTML】
+输出修复完成完整可独立运行HTML，从<!DOCTYPE html>开始，必须输出到</html>结束，禁止截断。
+⚠️强制规则：
+1. CSS、JS全部内嵌，禁止外部CDN、外部图片、网络请求。
+2. 需要图形只用CSS绘制div，禁止img、svg标签。
+3. </html>后面不能附带任何文字、注释。
+4. 保留原有产品需求与UI，只修复bug，不要改变业务功能。
+5. 不要伪代码，保证交互逻辑完整。`;
+
+// ==========【轻量增强容错解析器】==========
 function parseThinkAndHtml(rawText) {
   const thinkMark = "【思考】";
   const htmlMark = "【HTML】";
   let thinkText = "";
   let htmlText = "";
+  let isTruncated = false;
+
   const idxThink = rawText.indexOf(thinkMark);
   const idxHtml = rawText.indexOf(htmlMark);
 
   if(idxThink !== -1 && idxHtml !== -1 && idxHtml > idxThink){
     thinkText = rawText.substring(idxThink + thinkMark.length, idxHtml).trim();
     const htmlRaw = rawText.substring(idxHtml + htmlMark.length).trim();
-    // 只截取从<!DOCTYPE html> 到 </html> 的部分，后面文字全部丢弃
     const startHtml = htmlRaw.indexOf('<!DOCTYPE html>');
     const endHtml = htmlRaw.lastIndexOf('</html>');
     if (startHtml !== -1 && endHtml !== -1) {
       htmlText = htmlRaw.substring(startHtml, endHtml + 7).trim();
+    } else if(startHtml !== -1){
+      htmlText = htmlRaw.substring(startHtml).trim();
+      isTruncated = true;
     }
   }else{
-    // 兜底降级
     const startHtml = rawText.indexOf('<!DOCTYPE html>');
     const endHtml = rawText.lastIndexOf('</html>');
     if (startHtml !== -1 && endHtml !== -1) {
       htmlText = rawText.substring(startHtml, endHtml + 7).trim();
+    }else if(startHtml !== -1){
+      htmlText = rawText.substring(startHtml).trim();
+      isTruncated = true;
     }
     thinkText = rawText.replace(htmlText,"").trim();
   }
-  if(!htmlText.includes("<!DOCTYPE html>")){
-    throw new Error("返回内容不是有效HTML");
+  return {thinkText, htmlText, isTruncated};
+}
+
+// ========== JS语法预检模块 ==========
+function preCheckJsSyntax(fullHtml) {
+  const scriptReg = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+  const jsBlocks = [];
+  while ((match = scriptReg.exec(fullHtml)) !== null) {
+    jsBlocks.push(match[1]);
   }
-  return {thinkText, htmlText};
+  if (jsBlocks.length === 0) {
+    return {ok:true, msg:"未检测到JS代码", error:null};
+  }
+  for(const js of jsBlocks){
+    try{
+      new Function(js);
+    }catch(err){
+      return {
+        ok:false,
+        msg:`JS语法检测失败：${err.message}`,
+        error:err
+      }
+    }
+  }
+  return {ok:true, msg:"JS语法校验通过（⚠️仅语法，不校验业务/交互算法逻辑）", error:null};
+}
+
+// 兼容两种高风险标记 🔴高 / ●高
+function hasHighRisk(reportText){
+  return reportText.includes("🔴高") || reportText.includes("●高");
 }
 
 function loadSession() {
@@ -474,23 +554,60 @@ async function typeWriter(element, fullText, speed = 45) {
   }
 }
 
+// 注入iframe运行时监控脚本，检测DOM出现NaN、捕获异常
 function renderPreview(html) {
+  const injectMonitor = `
+<script>
+(function(){
+  const observer = new MutationObserver((mutations)=>{
+    for(let m of mutations){
+      for(let n of m.addedNodes){
+        if(n.nodeType===1){
+          if(n.textContent && n.textContent.includes("NaN")){
+            parent.postMessage({type:"WARN_NAN",msg:"⚠️预览页面检测到DOM渲染出NaN文本，代码存在数值计算bug"},'*');
+          }
+        }
+        if(n.nodeType===3){
+          if(n.textContent && n.textContent.includes("NaN")){
+            parent.postMessage({type:"WARN_NAN",msg:"⚠️预览页面检测到DOM渲染出NaN文本，代码存在数值计算bug"},'*');
+          }
+        }
+      }
+    });
+    observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+
+    window.onerror = function(msg,url,line,col,err){
+      parent.postMessage({type:"RUNTIME_ERROR",msg:String(msg),line,col},'*');
+    };
+    window.addEventListener('unhandledrejection',e=>{
+      parent.postMessage({type:"PROMISE_REJECT",msg:e.reason?.message||String(e.reason)},'*');
+    })
+})();
+<\/script>
+`;
+  let finalHtml;
+  const headIdx = html.indexOf("<head>");
+  if(headIdx !==-1){
+    finalHtml = html.slice(0,headIdx+6) + injectMonitor + html.slice(headIdx+6);
+  }else{
+    finalHtml = injectMonitor + html;
+  }
+
   sessionData.generatedCode = html;
   codeEditor.value = html;
   saveSession();
-  previewIframe.srcdoc = html;
+  previewIframe.srcdoc = finalHtml;
 }
 
-async function callGLM(prompt, isDraw) {
+// 通用LLM调用，支持自定义systemPrompt
+async function callGLMWithSysPrompt(prompt, sysPrompt, isDraw=false) {
   const model = isDraw ? MODEL_DRAW : MODEL_CODE;
   const messages = [
-    { role: "system", content: systemPrompt },
-    ...sessionData.messages.filter(m => m.content !== "loading"),
+    { role: "system", content: sysPrompt },
     { role: "user", content: prompt }
   ]
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
-
   try {
     const resp = await fetch(LLM_BASE_URL, {
       method: "POST",
@@ -513,40 +630,121 @@ async function callGLM(prompt, isDraw) {
     if (!json.choices || json.choices.length === 0) {
       throw new Error("模型返回异常");
     }
-    const raw = json.choices[0].message.content.trim();
-    const {thinkText, htmlText} = parseThinkAndHtml(raw);
-    return {thinkText, htmlText};
+    return json.choices[0].message.content.trim();
   } catch (err) {
     clearTimeout(timeoutId);
     throw err;
   }
 }
 
+// ==========【核心：生成 + 自动评审 + 自动修复循环】 ==========
+async function generateAndAutoFix(userPrompt){
+  let currentHtml = "";
+  let round = 0;
+  // 第一轮原始生成
+  const raw = await callGLMWithSysPrompt(userPrompt, systemPrompt, isDrawPrompt(userPrompt));
+  let parsed = parseThinkAndHtml(raw);
+  currentHtml = parsed.htmlText;
+
+  const checkRet = preCheckJsSyntax(currentHtml);
+  let logMsg = parsed.thinkText || "✅ 已生成网页应用代码";
+  if(parsed.isTruncated) logMsg += "\n⚠️警告：模型输出被截断，代码不完整，请手动补全";
+  if(!checkRet.ok){
+    logMsg += `\n⚠️【JS语法错误预警】${checkRet.msg}，预览大概率交互异常`;
+  }else{
+    logMsg += `\n【JS预检】${checkRet.msg}`;
+  }
+
+  // 添加第一轮输出到会话
+  sessionData.messages.push({role:"assistant", content: logMsg});
+  renderChat();
+  let msgDom = chatContainer.lastElementChild;
+  await typeWriter(msgDom, logMsg);
+  renderPreview(currentHtml);
+
+  // 自动修复循环
+  while(round < MAX_FIX_RETRY){
+    round +=1;
+    // 执行评审
+    const reviewInput = `请评审下面网页代码:\n${currentHtml}`;
+    const reviewReport = await callGLMWithSysPrompt(reviewInput, testReviewSystemPrompt);
+    // 输出评审报告
+    sessionData.messages.push({role:"assistant", content:`====第${round}轮自动评审报告====\n`+reviewReport});
+    renderChat();
+    msgDom = chatContainer.lastElementChild;
+    await typeWriter(msgDom, `====第${round}轮自动评审报告====\n`+reviewReport);
+
+    if(!hasHighRisk(reviewReport)){
+      sessionData.messages.push({role:"assistant", content:"✅本轮评审未发现🔴高风险缺陷，停止自动修复流程"});
+      renderChat();
+      msgDom = chatContainer.lastElementChild;
+      await typeWriter(msgDom,"✅本轮评审未发现🔴高风险缺陷，停止自动修复流程");
+      break;
+    }
+    if(round >= MAX_FIX_RETRY){
+      sessionData.messages.push({role:"assistant", content:`⚠️已经到达最大修复轮次${MAX_FIX_RETRY}，停止自动修复，请手动修改代码`});
+      renderChat();
+      msgDom = chatContainer.lastElementChild;
+      await typeWriter(msgDom,`⚠️已经到达最大修复轮次${MAX_FIX_RETRY}，停止自动修复，请手动修改代码`);
+      break;
+    }
+    // 触发修复
+    sessionData.messages.push({role:"assistant", content:`🔴检测到高风险bug，开始执行第${round}轮自动修复`});
+    renderChat();
+    msgDom = chatContainer.lastElementChild;
+    await typeWriter(msgDom,`🔴检测到高风险bug，开始执行第${round}轮自动修复`);
+
+    const fixPrompt = `原始HTML代码：
+${currentHtml}
+
+测试评审bug报告：
+${reviewReport}
+
+请根据报告修复全部高风险缺陷。`;
+    const fixRaw = await callGLMWithSysPrompt(fixPrompt, fixCodeSystemPrompt);
+    const fixParsed = parseThinkAndHtml(fixRaw);
+    currentHtml = fixParsed.htmlText;
+    const fixCheck = preCheckJsSyntax(currentHtml);
+    let fixLog = fixParsed.thinkText || "✅完成修复";
+    if(fixParsed.isTruncated) fixLog += "\n⚠️修复输出被截断";
+    if(!fixCheck.ok) fixLog +=`\n⚠️修复后JS语法错误：${fixCheck.msg}`;
+
+    sessionData.messages.push({role:"assistant", content:fixLog});
+    renderChat();
+    msgDom = chatContainer.lastElementChild;
+    await typeWriter(msgDom, fixLog);
+    renderPreview(currentHtml);
+  }
+  saveSession();
+  return currentHtml;
+}
+
+// 发送按钮，替换为自动生成+评审+修复入口
 sendBtn.onclick = async () => {
   const content = userInput.value.trim();
   if (!content || isTyping) return;
+
+  if(sessionData.messages.length >=6){
+    if(!confirm("当前会话消息较多，容易超时/格式错乱，建议新建会话，是否继续发送？")){
+      return;
+    }
+  }
+
   sendBtn.disabled = true;
   sendBtn.classList.add("opacity-60", "cursor-not-allowed");
-  sendBtn.innerHTML = `<i class="fa fa-circle-o-notch spin"></i> 正在生成…`;
+  sendBtn.innerHTML = `<i class="fa fa-circle-o-notch spin"></i> 生成+自动评审修复中…`;
   codeEditor.readOnly = true;
   codeEditor.classList.add("opacity-60");
-
   sessionData.messages.push({ role: "user", content });
-  sessionData.messages.push({ role: "assistant", content: "loading" });
-  const loadingMsgIndex = sessionData.messages.length - 1;
   userInput.value = "";
-  renderChat(loadingMsgIndex);
-
+  renderChat();
   try {
-    const drawFlag = isDrawPrompt(content);
-    const {thinkText, htmlText} = await callGLM(content, drawFlag);
-    sessionData.messages[loadingMsgIndex] = { role: "assistant", content: thinkText || "✅ 已生成网页应用代码" };
-    renderChat();
-    const msgDom = chatContainer.lastElementChild;
-    await typeWriter(msgDom, sessionData.messages[loadingMsgIndex].content);
-    renderPreview(htmlText);
+    isTyping = true;
+    await generateAndAutoFix(content);
   } catch (err) {
-    sessionData.messages[loadingMsgIndex] = { role: "assistant", content: "生成失败：" + err.message, error: true };
+    let msg = err.message;
+    if(err.name === 'AbortError') msg = "请求超时，请降低需求复杂度重试，或新建会话";
+    sessionData.messages.push({ role: "assistant", content: "生成/修复失败：" + msg, error: true });
     renderChat();
   } finally {
     sendBtn.disabled = false;
@@ -554,11 +752,55 @@ sendBtn.onclick = async () => {
     sendBtn.innerHTML = `<i class="fa fa-paper-plane"></i> 发送，让AI生成应用`;
     codeEditor.readOnly = false;
     codeEditor.classList.remove("opacity-60");
+    isTyping = false;
     saveSession();
   }
 }
 
-// 新建会话：清空对话+清空代码+清空预览
+// 手动评审按钮
+reviewBtn.onclick = async ()=>{
+  const codeText = codeEditor.value.trim();
+  if(!codeText){
+    alert("编辑器没有代码，无法执行评审");
+    return;
+  }
+  if(isTyping){
+    alert("正在处理请求，请等待完成");
+    return;
+  }
+  reviewBtn.disabled = true;
+  reviewBtn.classList.add("opacity-60");
+  isTyping = true;
+  sessionData.messages.push({role:"user",content:"执行AI代码评审"});
+  sessionData.messages.push({role:"assistant",content:"loading"});
+  const loadingIdx = sessionData.messages.length -1;
+  renderChat(loadingIdx);
+  try{
+    const reviewPrompt = `请评审下面网页代码:\n${codeText}`;
+    const report = await callGLMWithSysPrompt(reviewPrompt, testReviewSystemPrompt);
+    sessionData.messages[loadingIdx] = {role:"assistant", content: report};
+    renderChat();
+    const msgDom = chatContainer.lastElementChild;
+    await typeWriter(msgDom, report,25);
+  }catch(err){
+    let errMsg = err.name==='AbortError'?"评审请求超时":err.message;
+    sessionData.messages[loadingIdx] = {role:"assistant", content:"评审失败："+errMsg, error:true};
+    renderChat();
+  }finally{
+    reviewBtn.disabled = false;
+    reviewBtn.classList.remove("opacity-60");
+    isTyping = false;
+    saveSession();
+  }
+}
+
+userInput.addEventListener('keydown', function(e){
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    sendBtn.click();
+  }
+})
+
 newSessionBtn.onclick = () => {
   if (isTyping) return;
   sessionData = { messages: [], generatedCode: "" };
@@ -568,7 +810,6 @@ newSessionBtn.onclick = () => {
   previewIframe.srcdoc = "";
 }
 
-// 仅清空对话框：清空messages，保留代码和预览
 clearChatBtn.onclick = () => {
   if(isTyping) return;
   sessionData.messages = [];

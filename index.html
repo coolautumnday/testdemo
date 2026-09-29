@@ -37,7 +37,7 @@
   <style>
     *{box-sizing:border-box;}
     body,html{height:100%;margin:0;padding:0;overflow:hidden;}
-    .container-row{display:flex;height:100vh;}
+    .container-row{display:flex;height:calc(100vh - 48px);}
     .col-left{display:flex;flex-direction:column;height:100%;overflow:hidden;flex:0 0 25%;}
     .col-middle,.col-right{display:flex;flex-direction:column;height:100%;overflow:hidden;flex:0 0 37.5%;}
     #sendBtn{transition:all 0.25s ease;}
@@ -46,9 +46,57 @@
     .agent-status-item{display:flex;align-items:center;gap:8px;padding:4px 0;}
     .think-msg{background-color:#2c3444 !important;border-left:3px solid #60a5fa;}
     textarea.user-textarea{overflow-y:auto;}
+    /* 登录注册样式 */
+    #authPage{height:100vh;display:flex;align-items:center;justify-content:center;background:#111827;}
+    #authPage.hidden{display:none;}
+    #mainAppWrap{height:100vh;display:flex;flex-direction:column;}
+    #mainAppWrap.hidden{display:none;}
+    .auth-tab{cursor:pointer;padding:8px 16px;border-bottom:2px solid transparent;}
+    .auth-tab.active{border-color:#2563eb;color:#2563eb;}
   </style>
 </head>
 <body class="bg-gray-900 text-white">
+<!-- ========== 登录注册页面 ========== -->
+<div id="authPage">
+  <div class="w-full max-w-sm bg-panel rounded-lg p-6 border border-gray-700">
+    <h1 class="text-xl font-bold text-center mb-4">AI网页生成器</h1>
+    <div class="flex mb-4">
+      <div id="tabLogin" class="auth-tab active flex-1 text-center">登录</div>
+      <div id="tabRegister" class="auth-tab flex-1 text-center">注册</div>
+    </div>
+    <!-- 登录表单 -->
+    <div id="loginForm">
+      <div class="mb-3">
+        <label class="text-sm text-gray-300">用户名</label>
+        <input id="loginUsername" type="text" class="w-full mt-1 bg-gray-800 rounded p-2 border border-gray-600 outline-none text-white">
+      </div>
+      <div class="mb-3">
+        <label class="text-sm text-gray-300">密码</label>
+        <input id="loginPwd" type="password" class="w-full mt-1 bg-gray-800 rounded p-2 border border-gray-600 outline-none text-white">
+      </div>
+      <div id="loginTip" class="text-sm text-red-400 h-5 mb-3"></div>
+      <button id="loginBtn" class="w-full bg-primary py-2 rounded hover:bg-blue-600 transition">登录</button>
+    </div>
+    <!-- 注册表单 -->
+    <div id="registerForm" class="hidden">
+      <div class="mb-3">
+        <label class="text-sm text-gray-300">用户名</label>
+        <input id="regUsername" type="text" class="w-full mt-1 bg-gray-800 rounded p-2 border border-gray-600 outline-none text-white">
+      </div>
+      <div class="mb-3">
+        <label class="text-sm text-gray-300">密码</label>
+        <input id="regPwd" type="password" class="w-full mt-1 bg-gray-800 rounded p-2 border border-gray-600 outline-none text-white">
+      </div>
+      <div class="mb-3">
+        <label class="text-sm text-gray-300">确认密码</label>
+        <input id="regPwd2" type="password" class="w-full mt-1 bg-gray-800 rounded p-2 border border-gray-600 outline-none text-white">
+      </div>
+      <div id="regTip" class="text-sm h-5 mb-3"></div>
+      <button id="registerBtn" class="w-full bg-primary py-2 rounded hover:bg-blue-600 transition">注册账号</button>
+    </div>
+  </div>
+</div>
+<!-- API Key弹窗 -->
 <div id="apiKeyModal" class="hidden">
   <div class="bg-panel p-6 rounded-lg w-full max-w-md border border-gray-700">
     <h2 class="text-lg font-bold mb-2">配置智谱API Key</h2>
@@ -56,10 +104,27 @@
     <input id="apiKeyInput" type="password" placeholder="输入你的智谱API Key"
            class="w-full bg-gray-800 rounded p-2 border border-gray-600 focus:border-blue-400 outline-none mb-4 text-white">
     <div id="modalTip" class="text-sm mb-3 h-5"></div>
-    <button id="modalConnectBtn" class="w-full bg-primary py-2 rounded hover:bg-blue-600 transition">验证并进入应用</button>
+    <div class="flex gap-2">
+      <button id="modalCancelBtn" class="flex-1 bg-gray-600 py-2 rounded hover:bg-gray-500 transition">取消</button>
+      <button id="modalConnectBtn" class="flex-1 bg-primary py-2 rounded hover:bg-blue-600 transition">验证并进入应用</button>
+    </div>
   </div>
 </div>
 <div id="mainAppWrap" class="hidden">
+  <!-- 顶部用户栏 -->
+  <div class="h-12 bg-panel border-b border-gray-700 flex items-center justify-between px-4">
+    <div class="font-bold">AI网页生成器</div>
+    <div class="flex items-center gap-3">
+      <span id="curUserText" class="text-sm text-gray-300"></span>
+      <button id="configApiKeyBtn" class="bg-blue-700 px-3 py-1 rounded text-sm hover:bg-blue-600">
+        <i class="fa fa-key"></i> 配置API‑Key
+      </button>
+      <button id="clearApiKeyBtn" class="bg-red-700 px-2 py-1 rounded text-xs hover:bg-red-600">清除Key</button>
+      <button id="logoutBtn" class="bg-red-700 px-3 py-1 rounded text-sm hover:bg-red-600">
+        <i class="fa fa-sign-out"></i> 退出登录
+      </button>
+    </div>
+  </div>
 <div class="container-row">
   <div class="col-left bg-panel border-r border-gray-700" id="colLeft">
     <div class="p-4 border-b border-gray-700 flex justify-between items-center">
@@ -67,7 +132,6 @@
       <div class="flex gap-2">
         <button id="newSessionBtn" class="bg-primary px-3 py-1 rounded text-sm hover:bg-blue-600 transition-colors">新建会话</button>
         <button id="clearChatBtn" class="bg-gray-600 px-3 py-1 rounded text-sm hover:bg-gray-500 transition-colors">清空对话</button>
-        <button id="clearApiKeyBtn" class="bg-red-700 px-2 py-1 rounded text-xs hover:bg-red-600">清除Key</button>
       </div>
     </div>
     <div id="chatContainer" class="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-3"></div>
@@ -105,7 +169,6 @@
     <div class="p-3 border-b border-gray-200">
       <h2 class="font-bold text-gray-800">应用预览（可交互）</h2>
     </div>
-    <!-- 移除allow-same-origin，消除密钥泄露风险 -->
     <iframe id="previewIframe" sandbox="allow-scripts" class="flex-1 w-full bg-white" style="border:none;"></iframe>
   </div>
 </div>
@@ -120,6 +183,8 @@ const CONST = {
   LLM_TIMEOUT_MS: 300000,
   STORAGE_API_KEY: "demo_llm_api_key",
   STORAGE_KEY: "atoms-demo-session",
+  STORAGE_USERS: "app_user_list",
+  STORAGE_LOGIN: "app_login_session",
   MAX_FIX_RETRY: 3,
   MAX_SESSION_MSG_COUNT: 30,
   AGENT_STATUS: {
@@ -130,20 +195,18 @@ const CONST = {
     DONE:"done"
   }
 };
-// 优化关键词：剔除容易误触发的单字场景，必须完整词语
 const DRAW_KEYWORDS = ["绘制图片","画一张","画个图","画图标","绘制图形","画像","画画","绘制图案"];
 
-// ========= 全局状态对象聚合 =========
 const AppState = {
   LLM_API_KEY: "",
   isTyping: false,
   globalAbortController: null,
   isManualAbort: false,
-  forceTerminateRender: false, //用于新建会话强制终止所有打字渲染
-  sessionData: { messages:[], generatedCode:"", lastProductReport:"" }
+  forceTerminateRender: false,
+  sessionData: { messages:[], generatedCode:"", lastProductReport:"" },
+  currentUser: null
 };
 
-// 自定义终止异常
 class ManualAbortError extends Error {
   constructor(msg){
     super(msg);
@@ -151,10 +214,27 @@ class ManualAbortError extends Error {
   }
 }
 
-// DOM缓存
 const Dom = {
+  authPage: document.getElementById("authPage"),
+  tabLogin: document.getElementById("tabLogin"),
+  tabRegister: document.getElementById("tabRegister"),
+  loginForm: document.getElementById("loginForm"),
+  registerForm: document.getElementById("registerForm"),
+  loginUsername: document.getElementById("loginUsername"),
+  loginPwd: document.getElementById("loginPwd"),
+  loginTip: document.getElementById("loginTip"),
+  loginBtn: document.getElementById("loginBtn"),
+  regUsername: document.getElementById("regUsername"),
+  regPwd: document.getElementById("regPwd"),
+  regPwd2: document.getElementById("regPwd2"),
+  regTip: document.getElementById("regTip"),
+  registerBtn: document.getElementById("registerBtn"),
+  curUserText: document.getElementById("curUserText"),
+  logoutBtn: document.getElementById("logoutBtn"),
+  configApiKeyBtn: document.getElementById("configApiKeyBtn"),
   apiKeyModal: document.getElementById("apiKeyModal"),
   apiKeyInput: document.getElementById("apiKeyInput"),
+  modalCancelBtn: document.getElementById("modalCancelBtn"),
   modalConnectBtn: document.getElementById("modalConnectBtn"),
   modalTip: document.getElementById("modalTip"),
   mainAppWrap: document.getElementById("mainAppWrap"),
@@ -172,32 +252,169 @@ const Dom = {
   reviewBtn: document.getElementById("reviewBtn")
 };
 
-// 公共：会话消息数量校验
-function checkSessionMessageCount(){
-  if(AppState.sessionData.messages.length >=6){
-    return confirm("当前会话消息较多，容易超时/格式错乱，建议新建会话，是否继续？");
+function shrinkThinkText(text, maxLen = 550){
+  if(!text) return "";
+  if(text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + "\n……(内容已精简截断)";
+}
+
+// ====================== 【加强版统一停止函数】 ======================
+/**
+ * 加强停止：立即终止网络、全部打字循环、智能体思考打印
+ */
+function doStopLogic(){
+  // 强制全部终止标记，所有异步打字循环立刻判断退出
+  AppState.isManualAbort = true;
+  AppState.forceTerminateRender = true;
+  AppState.isTyping = false;
+
+  // 中断网络请求
+  if(AppState.globalAbortController){
+    AppState.globalAbortController.abort();
+    AppState.globalAbortController = null;
+  }
+  resetAgentLoadingStatus();
+  setUiIdle();
+}
+
+// ====================== 登录注册模块 ======================
+function getUserList(){
+  const raw = localStorage.getItem(CONST.STORAGE_USERS);
+  if(!raw) return [];
+  try{ return JSON.parse(raw); }catch(e){ return []; }
+}
+function saveUserList(list){
+  localStorage.setItem(CONST.STORAGE_USERS, JSON.stringify(list));
+}
+function getLoginSession(){
+  const s = localStorage.getItem(CONST.STORAGE_LOGIN);
+  if(!s) return null;
+  try{ return JSON.parse(s); }catch(e){ return null; }
+}
+function setLoginSession(userObj){
+  localStorage.setItem(CONST.STORAGE_LOGIN, JSON.stringify(userObj));
+}
+function clearLoginSession(){
+  localStorage.removeItem(CONST.STORAGE_LOGIN);
+}
+
+Dom.tabLogin.onclick = ()=>{
+  Dom.tabLogin.classList.add("active");
+  Dom.tabRegister.classList.remove("active");
+  Dom.loginForm.classList.remove("hidden");
+  Dom.registerForm.classList.add("hidden");
+  Dom.loginTip.textContent = "";
+  Dom.regTip.textContent = "";
+};
+Dom.tabRegister.onclick = ()=>{
+  Dom.tabRegister.classList.add("active");
+  Dom.tabLogin.classList.remove("active");
+  Dom.registerForm.classList.remove("hidden");
+  Dom.loginForm.classList.add("hidden");
+  Dom.loginTip.textContent = "";
+  Dom.regTip.textContent = "";
+};
+
+Dom.registerBtn.onclick = ()=>{
+  const u = Dom.regUsername.value.trim();
+  const p1 = Dom.regPwd.value;
+  const p2 = Dom.regPwd2.value;
+  Dom.regTip.textContent = "";
+  Dom.regTip.className = "text-sm h-5 mb-3 text-red-400";
+  if(!u){ Dom.regTip.textContent="请输入用户名"; return; }
+  if(p1.length<3){ Dom.regTip.textContent="密码至少3位"; return; }
+  if(p1!==p2){ Dom.regTip.textContent="两次密码不一致"; return; }
+  const users = getUserList();
+  const exist = users.find(x=>x.username === u);
+  if(exist){
+    Dom.regTip.textContent="该用户名已被注册";
+    return;
+  }
+  const newUser = { username:u, password:p1 };
+  users.push(newUser);
+  saveUserList(users);
+  Dom.regTip.className = "text-sm h-5 mb-3 text-green-400";
+  Dom.regTip.textContent="✅注册成功，请去登录";
+  setTimeout(()=>{
+    Dom.tabLogin.click();
+    Dom.loginUsername.value = u;
+  },600);
+};
+
+Dom.loginBtn.onclick = ()=>{
+  const u = Dom.loginUsername.value.trim();
+  const p = Dom.loginPwd.value;
+  Dom.loginTip.textContent="";
+  if(!u || !p){ Dom.loginTip.textContent="请填写用户名密码"; return; }
+  const users = getUserList();
+  const find = users.find(x=>x.username === u && x.password === p);
+  if(!find){
+    Dom.loginTip.textContent="用户名或密码错误";
+    return;
+  }
+  setLoginSession({username:u});
+  AppState.currentUser = {username:u};
+  enterAppAfterLogin();
+};
+
+// 【退出登录：先执行停止，再清空会话跳转登录页】
+Dom.logoutBtn.onclick = ()=>{
+  if(!confirm("确定要退出登录吗？会话会清空，API‑key保留本地")) return;
+  // 退出登录前：强制停止所有智能体、网络、打字输出
+  doStopLogic();
+
+  clearLoginSession();
+  AppState.currentUser = null;
+  AppState.sessionData = { messages:[], generatedCode:"", lastProductReport:"" };
+  showAuthPage();
+};
+
+function showAuthPage(){
+  Dom.authPage.classList.remove("hidden");
+  Dom.mainAppWrap.classList.add("hidden");
+  Dom.apiKeyModal.classList.add("hidden");
+}
+function enterAppAfterLogin(){
+  Dom.authPage.classList.add("hidden");
+  Dom.mainAppWrap.classList.remove("hidden");
+  Dom.curUserText.textContent = "当前用户：" + AppState.currentUser.username;
+  initKeyFlow();
+}
+function checkAuthAndBoot(){
+  const session = getLoginSession();
+  if(session && session.username){
+    AppState.currentUser = {username: session.username};
+    enterAppAfterLogin();
+  }else{
+    showAuthPage();
+  }
+}
+
+Dom.modalCancelBtn.onclick = ()=>{
+  Dom.apiKeyModal.classList.add("hidden");
+};
+Dom.configApiKeyBtn.onclick = ()=>{
+  Dom.apiKeyInput.value = AppState.LLM_API_KEY || "";
+  Dom.modalTip.textContent = "";
+  Dom.apiKeyModal.classList.remove("hidden");
+};
+
+// ========= 业务工具函数 =========
+function hasApiKey(){
+  if(!AppState.LLM_API_KEY){
+    alert("尚未配置 API Key，请先配置");
+    return false;
   }
   return true;
 }
 
-// 重置请求状态，每次发起请求统一调用
 function resetRequestState(){
   AppState.isManualAbort = false;
   AppState.forceTerminateRender = false;
 }
 
 Dom.stopBtn.onclick = ()=>{
-  if(AppState.globalAbortController){
-    AppState.isManualAbort=true;
-    AppState.forceTerminateRender = true;
-    AppState.globalAbortController.abort();
-  }
-  AppState.isTyping=false;
-  resetAgentLoadingStatus();
-  setUiIdle();
-  AppState.sessionData.messages.push({role:"assistant",content:"🛑 用户手动终止了请求",error:true});
-  renderChat();
-  saveSession();
+  doStopLogic();
 };
 
 function setUiBusy(){
@@ -206,14 +423,12 @@ function setUiBusy(){
   Dom.codeEditor.readOnly=true; Dom.codeEditor.classList.add("opacity-60");
   Dom.stopBtn.disabled=false; Dom.stopBtn.classList.remove("opacity-50","cursor-not-allowed");
 }
-
 function setUiIdle(){
   Dom.sendBtn.disabled=false; Dom.sendBtn.classList.remove("opacity-60","cursor-not-allowed");
   Dom.sendBtn.innerHTML=`<i class="fa fa-paper-plane"></i> 发送，让AI生成应用`;
   Dom.codeEditor.readOnly=false; Dom.codeEditor.classList.remove("opacity-60");
   Dom.stopBtn.disabled=true; Dom.stopBtn.classList.add("opacity-50","cursor-not-allowed");
 }
-
 function resetAgentLoadingStatus(){
   AppState.sessionData.messages.forEach(m=>{if(m.agentStatus) m.agentStatus=CONST.AGENT_STATUS.DONE;});
   renderChat();
@@ -237,17 +452,14 @@ function renderAgentStatus(msgIndex,status){
   AppState.sessionData.messages[msgIndex].agentStatus=status;
   renderChat();
 }
-
 function escapeHtml(str){
   if(!str) return "";
   let s = String(str);
-  //超长简单截断保护
   if(s.length>25000){
     s = s.slice(0,25000)+"\n……(内容过长已截断)";
   }
-  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace( />/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 }
-
 const isDrawPrompt = text=> DRAW_KEYWORDS.some(k=>text.includes(k));
 
 async function testApiKey(key){
@@ -261,19 +473,16 @@ async function testApiKey(key){
     });
     clearTimeout(t);
     if(!res.ok) return false;
-    //注意：http200不代表该key已开通对应模型权限，业务请求仍可能报错
     return true;
   }catch(e){ clearTimeout(t); return false; }
 }
 
 function backToKeyModal(){
   AppState.LLM_API_KEY="";
-  Dom.mainAppWrap.classList.add("hidden");
-  Dom.apiKeyModal.classList.remove("hidden");
   Dom.apiKeyInput.value="";
   Dom.modalTip.textContent="";
+  Dom.apiKeyModal.classList.remove("hidden");
 }
-
 async function initKeyFlow(){
   const saved=localStorage.getItem(CONST.STORAGE_API_KEY);
   if(saved){
@@ -284,7 +493,6 @@ async function initKeyFlow(){
   }
   Dom.apiKeyModal.classList.remove("hidden");
 }
-
 Dom.modalConnectBtn.onclick=async()=>{
   const val=Dom.apiKeyInput.value.trim();
   if(!val){ Dom.modalTip.textContent="请输入API Key"; Dom.modalTip.className="text-sm mb-3 h-5 text-red-400"; return; }
@@ -300,12 +508,14 @@ Dom.modalConnectBtn.onclick=async()=>{
   }
   Dom.modalConnectBtn.disabled=false; Dom.modalConnectBtn.textContent="验证并进入应用";
 };
-
 function enterMainApp(){ Dom.apiKeyModal.classList.add("hidden"); Dom.mainAppWrap.classList.remove("hidden"); bootstrapApp(); }
 
 Dom.clearApiKeyBtn.onclick=()=>{
-  if(!confirm("确定清除本地保存的APIKey吗？")) return;
-  localStorage.removeItem(CONST.STORAGE_API_KEY); backToKeyModal();
+  if(!confirm("确定清除本地保存的APIKey吗？清除后会停止当前任务。")) return;
+  doStopLogic();
+  localStorage.removeItem(CONST.STORAGE_API_KEY);
+  AppState.LLM_API_KEY = "";
+  backToKeyModal();
 };
 
 // ========= System Prompt =========
@@ -326,7 +536,6 @@ const productAgentSystemPrompt = `你是资深产品经理Agent，负责对用�
 ## 边界与异常
 列举空输入、越界、数值计算、状态异常场景，开发时需要规避NaN、undefined等问题
 要求：只做需求分析，**不要写HTML、不要写代码**。输出清晰简洁，给后续工程师作为开发依据。`;
-
 const productVerifySystemPrompt = `你是资深产品经理Agent。
 已有【需求分析报告】和【代码评审报告】，同时网页已经渲染完成。
 你的任务：对比评审报告与原始需求，确认当前实现与需求分析报告是否一致；识别中风险及以上问题是否影响产品需求。
@@ -338,7 +547,6 @@ const productVerifySystemPrompt = `你是资深产品经理Agent。
 ## 需要修复的问题清单
 列出所有中风险🔴🟡、高风险🔴缺陷对应的业务影响，交给前端工程师修复。若无中高风险，则写：无需要修复的中/高风险问题。
 不要输出HTML代码，只输出复核分析文本。`;
-
 const systemPrompt = `你是资深前端工程师Agent。参考【产品需求分析报告】+用户原始需求，严格按格式输出完整网页。
 输出格式：
 【思考】
@@ -351,7 +559,6 @@ const systemPrompt = `你是资深前端工程师Agent。参考【产品需求�
 3. </html>后面不能附带任何文字、注释。
 4. 代码必须完整可交互，不要伪代码，不要省略逻辑。
 5. ⚠️JS数值处理：必须防范产生NaN；数值运算前校验变量不为undefined/null；除法、数学运算做边界判断；渲染页面时禁止直接输出NaN字符串到DOM。`;
-
 const simpleModeSystemPrompt = `你是资深前端工程师Agent，直接根据用户需求编写完整网页。
 输出格式：
 【思考】
@@ -364,7 +571,6 @@ const simpleModeSystemPrompt = `你是资深前端工程师Agent，直接根据�
 3. </html>后面不能附带任何文字、注释。
 4. 代码必须完整可交互，不要伪代码，不要省略逻辑。
 5. ⚠️JS数值处理：必须防范产生NaN；数值运算前校验变量不为undefined/null；除法、数学运算做边界判断；渲染页面时禁止直接输出NaN字符串到DOM。`;
-
 const testReviewSystemPrompt = `你是资深软件测试工程师，对传入的完整网页HTML代码做代码评审，并检查逻辑是否符合【产品需求分析报告】。
 任务：只做审查，不要修改代码，不要输出完整HTML。
 必须覆盖下面4个强制校验点：JS核心数据、渲染功能、业务函数、交互事件。
@@ -380,7 +586,6 @@ const testReviewSystemPrompt = `你是资深软件测试工程师，对传入的
 重点检查是否会产生NaN，是否直接把NaN渲染到DOM。
 如果没有问题，如实写“未检测到明显缺陷，但不代表逻辑完全正确，仍需要手动实际测试”。
 不要编造不存在的bug。不要输出修复后的代码。`;
-
 const fixCodeSystemPrompt = `你是资深前端工程师。你会收到原始HTML代码 + 产品复核报告，报告中列出需要修复的中风险、高风险问题。
 任务：根据复核报告修复全部中风险、高风险缺陷。严格遵守输出格式。
 输出格式：
@@ -414,17 +619,13 @@ function parseThinkAndHtml(rawText) {
   return {thinkText,htmlText,isTruncated};
 }
 
-// 优化preCheckJsSyntax，增加内联事件提示；兼容顶层await/import
 function preCheckJsSyntax(fullHtml){
   const reg=/<script\b[^>]*>([\s\S]*?)<\/script>/gi;
   let match,blocks=[];
   while((match=reg.exec(fullHtml))!==null) blocks.push(match[1]);
-
-  //简单识别内联事件
   if(/on\w+="/.test(fullHtml)){
     return {ok:true,msg:"JS语法校验：检测到HTML内联事件，无法做静态语法校验，请预览测试",error:null};
   }
-
   if(blocks.length===0) return {ok:true,msg:"未检测到JS代码",error:null};
   for(const js of blocks){
     try{
@@ -439,7 +640,6 @@ function preCheckJsSyntax(fullHtml){
   }
   return {ok:true,msg:"JS语法校验通过（⚠️仅语法，不校验业务/交互算法逻辑）",error:null};
 }
-
 const hasMediumOrHighRisk=r=> r.includes("🔴高")||r.includes("🟡中");
 
 function loadSession(){
@@ -452,9 +652,7 @@ function loadSession(){
   Dom.codeEditor.value=AppState.sessionData.generatedCode;
   renderPreview(AppState.sessionData.generatedCode);
 }
-
 function saveSession(){
-  //简易消息截断，防止无限膨胀
   if(AppState.sessionData.messages.length > CONST.MAX_SESSION_MSG_COUNT){
     AppState.sessionData.messages = AppState.sessionData.messages.slice(-CONST.MAX_SESSION_MSG_COUNT);
   }
@@ -506,12 +704,13 @@ function renderChat(){
   Dom.chatContainer.scrollTop=Dom.chatContainer.scrollHeight;
 }
 
-async function typeWriter(element,fullText,speed=45){
+async function typeWriter(element,fullText,speed=18){
   AppState.isTyping=true;
   try{
     let cur="";
     for(let i=0;i<fullText.length;i++){
-      if(!AppState.isTyping || AppState.isManualAbort || AppState.forceTerminateRender) break;
+      // 加强：只要终止标记为true立刻跳出循环，不再打印任何字符
+      if(AppState.isManualAbort || AppState.forceTerminateRender || !AppState.isTyping) break;
       cur+=fullText[i];
       element.innerHTML=`<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(cur)}<span class="opacity-70">|</span></div>`;
       await new Promise(r=>setTimeout(r,speed));
@@ -524,23 +723,24 @@ async function typeWriter(element,fullText,speed=45){
 
 async function showAgentThink(label,rawText){
   AppState.sessionData.messages.push({role:"assistant",thinkType:true,thinkTypeLabel:label,content:rawText});
+  const showText = shrinkThinkText(rawText);
   renderChat();
   const el=Dom.chatContainer.lastElementChild;
   AppState.isTyping=true; let cur="";
-  for(let i=0;i<rawText.length;i++){
-    if(!AppState.isTyping || AppState.isManualAbort || AppState.forceTerminateRender) break;
-    cur+=rawText[i];
+  for(let i=0;i<showText.length;i++){
+    // 加强终止判断，立刻停止思考打印
+    if(AppState.isManualAbort || AppState.forceTerminateRender || !AppState.isTyping) break;
+    cur+=showText[i];
     el.innerHTML=`<div class="text-sm text-blue-300 mb-1">${escapeHtml(label)}</div><div class="whitespace-pre-wrap text-sm">${escapeHtml(cur)}<span class="opacity-70">|</span></div>`;
     Dom.chatContainer.scrollTop=Dom.chatContainer.scrollHeight;
-    await new Promise(r=>setTimeout(r,30));
+    await new Promise(r=>setTimeout(r,12));
   }
   if(!AppState.forceTerminateRender){
-    el.innerHTML=`<div class="text-sm text-blue-300 mb-1">${escapeHtml(label)}</div><div class="whitespace-pre-wrap text-sm">${escapeHtml(rawText)}</div>`;
+    el.innerHTML=`<div class="text-sm text-blue-300 mb-1">${escapeHtml(label)}</div><div class="whitespace-pre-wrap text-sm">${escapeHtml(showText)}</div>`;
   }
   saveSession();
 }
 
-// 只注入一次monitor脚本标记，避免重复注入
 function renderPreview(html){
   const injectMonitor=`<script data-monitor-script="true">
 (function(){
@@ -605,7 +805,6 @@ async function generateAndAutoFix(userPrompt,simpleMode){
   AppState.sessionData.messages.push({role:"assistant",content:"",agentStatus:simpleMode?CONST.AGENT_STATUS.ENGINEER:CONST.AGENT_STATUS.PRODUCT});
   renderAgentStatus(assistMsgIdx,simpleMode?CONST.AGENT_STATUS.ENGINEER:CONST.AGENT_STATUS.PRODUCT);
   let engineerInput,productReport="";
-
   if(simpleMode){
     AppState.sessionData.lastProductReport = "";
     engineerInput=userPrompt;
@@ -619,7 +818,6 @@ ${userPrompt}
 下面是产品经理输出的需求分析报告，请依据这份报告实现网页：
 ${productReport}`;
   }
-
   const rawEngineer=await callGLMWithSysPrompt(engineerInput,simpleMode?simpleModeSystemPrompt:systemPrompt,isDrawPrompt(userPrompt));
   await showAgentThink("🔹工程师Agent思考",rawEngineer);
   let parsed=parseThinkAndHtml(rawEngineer);
@@ -635,13 +833,11 @@ ${productReport}`;
   renderChat();
   await typeWriter(Dom.chatContainer.lastElementChild,logMsg);
   renderPreview(currentHtml);
-
   while(round<CONST.MAX_FIX_RETRY){
     round++;
     if(AppState.isManualAbort || AppState.forceTerminateRender){
       throw new ManualAbortError("生成流程被手动终止");
     }
-
     const reviewMsgIdx=AppState.sessionData.messages.length;
     AppState.sessionData.messages.push({role:"assistant",content:"",agentStatus:CONST.AGENT_STATUS.TESTER_REVIEW});
     renderAgentStatus(reviewMsgIdx,CONST.AGENT_STATUS.TESTER_REVIEW);
@@ -651,7 +847,6 @@ ${productReport}`;
     AppState.sessionData.messages[reviewMsgIdx].content=`====第${round}轮 测试评审报告====\n`+rawReview;
     renderChat();
     await typeWriter(Dom.chatContainer.lastElementChild,AppState.sessionData.messages[reviewMsgIdx].content);
-
     const verifyMsgIdx=AppState.sessionData.messages.length;
     AppState.sessionData.messages.push({role:"assistant",content:"",agentStatus:CONST.AGENT_STATUS.PRODUCT_VERIFY});
     renderAgentStatus(verifyMsgIdx,CONST.AGENT_STATUS.PRODUCT_VERIFY);
@@ -667,7 +862,6 @@ ${rawReview}
     AppState.sessionData.messages[verifyMsgIdx].content=`====第${round}轮 产品复核结果====\n`+rawVerify;
     renderChat();
     await typeWriter(Dom.chatContainer.lastElementChild,AppState.sessionData.messages[verifyMsgIdx].content);
-
     if(!hasMediumOrHighRisk(rawReview)){
       const txt="✅本轮评审+产品复核未检测到中/高风险缺陷，自动修复流程结束";
       AppState.sessionData.messages.push({role:"assistant",content:txt});
@@ -686,7 +880,6 @@ ${rawReview}
     AppState.sessionData.messages.push({role:"assistant",content:fixTip});
     renderChat();
     await typeWriter(Dom.chatContainer.lastElementChild,fixTip);
-
     const fixPrompt=`原始HTML代码：
 ${currentHtml}
 产品复核报告（需要修复中风险、高风险问题）：
@@ -712,7 +905,8 @@ ${rawVerify}
 Dom.sendBtn.onclick=async()=>{
   const content=Dom.userInput.value.trim();
   if(!content||AppState.isTyping) return;
-  if(!checkSessionMessageCount()) return;
+  if(!hasApiKey()) return;
+  if(!(AppState.sessionData.messages.length <6?true:confirm("当前会话消息较多，容易超时/格式错乱，建议新建会话，是否继续？"))) return;
   resetRequestState();
   const simpleMode=Dom.simpleModeCheck.checked;
   setUiBusy();
@@ -730,7 +924,8 @@ Dom.reviewBtn.onclick=async()=>{
   const codeText=Dom.codeEditor.value.trim();
   if(!codeText){ alert("编辑器没有代码，无法执行评审"); return; }
   if(AppState.isTyping){ alert("正在处理请求，请等待完成"); return; }
-  if(!checkSessionMessageCount()) return;
+  if(!hasApiKey()) return;
+  if(!(AppState.sessionData.messages.length <6?true:confirm("当前会话消息较多，容易超时/格式错乱，建议新建会话，是否继续？"))) return;
   resetRequestState();
   setUiBusy();
   AppState.sessionData.messages.push({role:"user",content:"执行AI代码评审"});
@@ -758,21 +953,13 @@ Dom.userInput.addEventListener('keydown',e=>{
 });
 
 Dom.newSessionBtn.onclick=()=>{
-  //终止网络与渲染
-  AppState.forceTerminateRender = true;
-  if(AppState.globalAbortController){
-    AppState.isManualAbort=true;
-    AppState.globalAbortController.abort();
-    AppState.globalAbortController=null;
-  }
-  AppState.isTyping=false;
+  doStopLogic();
   AppState.sessionData={messages:[],generatedCode:"",lastProductReport:""};
   saveSession();
   renderChat();
   Dom.codeEditor.value="";
   Dom.previewIframe.srcdoc="";
 };
-
 Dom.clearChatBtn.onclick=()=>{
   if(AppState.isTyping) return;
   AppState.sessionData.messages=[]; saveSession(); renderChat();
@@ -803,8 +990,9 @@ Dom.codeEditor.oninput=()=>{
 };
 
 function bootstrapApp(){ loadSession(); }
-
-window.onload=()=>initKeyFlow();
+window.onload=()=>{
+  checkAuthAndBoot();
+};
 </script>
 </body>
 </html>

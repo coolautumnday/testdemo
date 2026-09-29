@@ -21,90 +21,31 @@
   </script>
   <style type="text/tailwindcss">
     @layer utilities {
-      .scrollbar-thin::-webkit-scrollbar {
-        width: 6px;
-      }
-      .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: #555;
-        border-radius: 3px;
-      }
-      .scrollbar-thin::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .spin {
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-      .msg-fade-in {
-        animation: fadeIn 0.35s ease-out;
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .pulse‑dot span {
-        animation: pulseDot 1.4s infinite;
-      }
-      .pulse‑dot span:nth‑child(2) {animation‑delay:0.2s;}
-      .pulse‑dot span:nth‑child(3) {animation‑delay:0.4s;}
-      @keyframes pulseDot{
-        0%,100%{opacity:0.2;}
-        50%{opacity:1;}
-      }
+      .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+      .scrollbar-thin::-webkit-scrollbar-thumb { background:#555; border-radius:3px; }
+      .scrollbar-thin::-webkit-scrollbar-track { background:transparent; }
+      .spin { animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .msg-fade-in { animation: fadeIn 0.35s ease-out; }
+      @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+      .pulse-dot span { animation: pulseDot 1.4s infinite; }
+      .pulse-dot span:nth-child(2) {animation-delay:0.2s;}
+      .pulse-dot span:nth-child(3) {animation-delay:0.4s;}
+      @keyframes pulseDot{0%,100%{opacity:0.2;}50%{opacity:1;}}
     }
   </style>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-    body, html {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
-    .container-row {
-      display: flex;
-      height: 100vh;
-    }
-    .col-left {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
-      flex: 0 0 25%;
-    }
-    .col-middle, .col-right {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow: hidden;
-      flex: 0 0 37.5%;
-    }
-    #sendBtn {
-      transition: all 0.25s ease;
-    }
-    /* api key modal */
-    #apiKeyModal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.85);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    #apiKeyModal.hidden {
-      display: none;
-    }
-    .agent‑status‑item{
-      display:flex;
-      align‑items:center;
-      gap:8px;
-      padding:4px 0;
-    }
+    *{box-sizing:border-box;}
+    body,html{height:100%;margin:0;padding:0;overflow:hidden;}
+    .container-row{display:flex;height:100vh;}
+    .col-left{display:flex;flex-direction:column;height:100%;overflow:hidden;flex:0 0 25%;}
+    .col-middle,.col-right{display:flex;flex-direction:column;height:100%;overflow:hidden;flex:0 0 37.5%;}
+    #sendBtn{transition:all 0.25s ease;}
+    #apiKeyModal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;}
+    #apiKeyModal.hidden{display:none;}
+    .agent-status-item{display:flex;align-items:center;gap:8px;padding:4px 0;}
+    .think-msg{background-color:#2c3444 !important;border-left:3px solid #60a5fa;}
+    textarea.user-textarea{overflow-y:auto;}
   </style>
 </head>
 <body class="bg-gray-900 text-white">
@@ -131,7 +72,7 @@
     </div>
     <div id="chatContainer" class="flex-1 overflow-y-auto p-3 scrollbar-thin space-y-3"></div>
     <div class="p-3 border-t border-gray-700">
-      <textarea id="userInput" class="w-full bg-gray-800 rounded p-2 h-24 resize-none outline-none border border-gray-600 text-white transition-colors focus:border-blue-400" placeholder="输入你的想法，例如：做一个番茄钟网页 / 画一个太阳"></textarea>
+      <textarea id="userInput" class="user-textarea w-full bg-gray-800 rounded p-2 h-24 resize-none outline-none border border-gray-600 text-white transition-colors focus:border-blue-400 scrollbar-thin" placeholder="输入你的想法，例如：做一个番茄钟网页 / 画一个太阳"></textarea>
       <div class="flex items-center justify-between mt-2 mb-2">
         <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
           <input id="simpleModeCheck" type="checkbox">
@@ -146,7 +87,6 @@
       </button>
     </div>
   </div>
-
   <div class="col-middle bg-codeBg border-r border-gray-700" id="colMiddle">
     <div class="p-3 border-b border-gray-600 flex justify-between gap-2">
       <h2 class="font-bold text-white">生成代码</h2>
@@ -161,236 +101,214 @@
     </div>
     <textarea id="codeEditor" class="flex-1 w-full bg-transparent p-3 text-sm font-mono outline-none resize-none scrollbar-thin text-white overflow-y-auto" spellcheck="false"></textarea>
   </div>
-
   <div class="col-right bg-white" id="colRight">
     <div class="p-3 border-b border-gray-200">
       <h2 class="font-bold text-gray-800">应用预览（可交互）</h2>
     </div>
-    <iframe id="previewIframe" sandbox="allow-scripts allow-same-origin" class="flex-1 w-full bg-white" style="border:none;"></iframe>
+    <!-- 移除allow-same-origin，消除密钥泄露风险 -->
+    <iframe id="previewIframe" sandbox="allow-scripts" class="flex-1 w-full bg-white" style="border:none;"></iframe>
   </div>
 </div>
 </div>
 <script>
-const LLM_BASE_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-const MODEL_CODE = "glm-4-flash";
-const MODEL_DRAW = "glm-4v-flash";
-const LLM_TEMPERATURE = 0.7;
-const LLM_TIMEOUT_MS = 120000;
-const DRAW_KEYWORDS = ["画","图","图标","绘制","图形","画像","画画","图案"];
-const STORAGE_API_KEY = "demo_llm_api_key";
-const STORAGE_KEY = "atoms-demo-session";
-const MAX_FIX_RETRY = 3;
+// ========= 常量定义 =========
+const CONST = {
+  LLM_BASE_URL: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+  MODEL_CODE: "glm-4-flash",
+  MODEL_DRAW: "glm-4v-flash",
+  LLM_TEMPERATURE: 0.7,
+  LLM_TIMEOUT_MS: 300000,
+  STORAGE_API_KEY: "demo_llm_api_key",
+  STORAGE_KEY: "atoms-demo-session",
+  MAX_FIX_RETRY: 3,
+  MAX_SESSION_MSG_COUNT: 30,
+  AGENT_STATUS: {
+    PRODUCT:"product",
+    ENGINEER:"engineer",
+    TESTER_REVIEW:"tester_review",
+    PRODUCT_VERIFY:"product_verify",
+    DONE:"done"
+  }
+};
+// 优化关键词：剔除容易误触发的单字场景，必须完整词语
+const DRAW_KEYWORDS = ["绘制图片","画一张","画个图","画图标","绘制图形","画像","画画","绘制图案"];
 
-const apiKeyModal = document.getElementById("apiKeyModal");
-const apiKeyInput = document.getElementById("apiKeyInput");
-const modalConnectBtn = document.getElementById("modalConnectBtn");
-const modalTip = document.getElementById("modalTip");
-const mainAppWrap = document.getElementById("mainAppWrap");
-let LLM_API_KEY = "";
-let isTyping = false;
-let globalAbortController = null;
-
-const stopBtn = document.getElementById("stopBtn");
-const simpleModeCheck = document.getElementById("simpleModeCheck");
-
-// Agent状态枚举
-const AGENT_STATUS = {
-  PRODUCT: "product",
-  ENGINEER: "engineer",
-  TESTER_REVIEW: "tester_review",
-  PRODUCT_VERIFY: "product_verify",
-  DONE: "done"
+// ========= 全局状态对象聚合 =========
+const AppState = {
+  LLM_API_KEY: "",
+  isTyping: false,
+  globalAbortController: null,
+  isManualAbort: false,
+  forceTerminateRender: false, //用于新建会话强制终止所有打字渲染
+  sessionData: { messages:[], generatedCode:"", lastProductReport:"" }
 };
 
-// 停止按钮
-stopBtn.onclick = ()=>{
-  if(globalAbortController){
-    globalAbortController.abort();
+// 自定义终止异常
+class ManualAbortError extends Error {
+  constructor(msg){
+    super(msg);
+    this.name = "ManualAbortError";
   }
-  isTyping = false;
+}
+
+// DOM缓存
+const Dom = {
+  apiKeyModal: document.getElementById("apiKeyModal"),
+  apiKeyInput: document.getElementById("apiKeyInput"),
+  modalConnectBtn: document.getElementById("modalConnectBtn"),
+  modalTip: document.getElementById("modalTip"),
+  mainAppWrap: document.getElementById("mainAppWrap"),
+  stopBtn: document.getElementById("stopBtn"),
+  simpleModeCheck: document.getElementById("simpleModeCheck"),
+  chatContainer: document.getElementById("chatContainer"),
+  userInput: document.getElementById("userInput"),
+  sendBtn: document.getElementById("sendBtn"),
+  newSessionBtn: document.getElementById("newSessionBtn"),
+  clearChatBtn: document.getElementById("clearChatBtn"),
+  clearApiKeyBtn: document.getElementById("clearApiKeyBtn"),
+  codeEditor: document.getElementById("codeEditor"),
+  previewIframe: document.getElementById("previewIframe"),
+  exportBtn: document.getElementById("exportBtn"),
+  reviewBtn: document.getElementById("reviewBtn")
+};
+
+// 公共：会话消息数量校验
+function checkSessionMessageCount(){
+  if(AppState.sessionData.messages.length >=6){
+    return confirm("当前会话消息较多，容易超时/格式错乱，建议新建会话，是否继续？");
+  }
+  return true;
+}
+
+// 重置请求状态，每次发起请求统一调用
+function resetRequestState(){
+  AppState.isManualAbort = false;
+  AppState.forceTerminateRender = false;
+}
+
+Dom.stopBtn.onclick = ()=>{
+  if(AppState.globalAbortController){
+    AppState.isManualAbort=true;
+    AppState.forceTerminateRender = true;
+    AppState.globalAbortController.abort();
+  }
+  AppState.isTyping=false;
   resetAgentLoadingStatus();
   setUiIdle();
+  AppState.sessionData.messages.push({role:"assistant",content:"🛑 用户手动终止了请求",error:true});
+  renderChat();
+  saveSession();
 };
 
 function setUiBusy(){
-  sendBtn.disabled = true;
-  sendBtn.classList.add("opacity-60", "cursor-not-allowed");
-  sendBtn.innerHTML = `<i class="fa fa-circle-o-notch spin"></i> 多智能体处理中…`;
-  codeEditor.readOnly = true;
-  codeEditor.classList.add("opacity-60");
-  stopBtn.disabled = false;
-  stopBtn.classList.remove("opacity-50","cursor-not-allowed");
+  Dom.sendBtn.disabled=true; Dom.sendBtn.classList.add("opacity-60","cursor-not-allowed");
+  Dom.sendBtn.innerHTML=`<i class="fa fa-circle-o-notch spin"></i> 多智能体处理中…`;
+  Dom.codeEditor.readOnly=true; Dom.codeEditor.classList.add("opacity-60");
+  Dom.stopBtn.disabled=false; Dom.stopBtn.classList.remove("opacity-50","cursor-not-allowed");
 }
+
 function setUiIdle(){
-  sendBtn.disabled = false;
-  sendBtn.classList.remove("opacity-60", "cursor-not-allowed");
-  sendBtn.innerHTML = `<i class="fa fa-paper-plane"></i> 发送，让AI生成应用`;
-  codeEditor.readOnly = false;
-  codeEditor.classList.remove("opacity-60");
-  stopBtn.disabled = true;
-  stopBtn.classList.add("opacity-50","cursor-not-allowed");
+  Dom.sendBtn.disabled=false; Dom.sendBtn.classList.remove("opacity-60","cursor-not-allowed");
+  Dom.sendBtn.innerHTML=`<i class="fa fa-paper-plane"></i> 发送，让AI生成应用`;
+  Dom.codeEditor.readOnly=false; Dom.codeEditor.classList.remove("opacity-60");
+  Dom.stopBtn.disabled=true; Dom.stopBtn.classList.add("opacity-50","cursor-not-allowed");
 }
+
 function resetAgentLoadingStatus(){
-  for(let m of sessionData.messages){
-    if(m.agentStatus){
-      m.agentStatus = AGENT_STATUS.DONE;
-    }
-  }
+  AppState.sessionData.messages.forEach(m=>{if(m.agentStatus) m.agentStatus=CONST.AGENT_STATUS.DONE;});
   renderChat();
 }
 
-// 监听iframe运行时消息：NaN告警、JS异常
-window.addEventListener('message',(evt)=>{
-  const data = evt.data;
-  if(!data || !data.type) return;
-  if(data.type === "WARN_NAN"){
-    sessionData.messages.push({
-      role:"assistant",
-      content:"🔴运行时告警："+data.msg,
-      error:true
-    });
-    renderChat();
-    saveSession();
-  }else if(data.type === "RUNTIME_ERROR"){
-    sessionData.messages.push({
-      role:"assistant",
-      content:`🟡运行时异常：${data.msg} 行:${data.line||''}`,
-      error:true
-    });
-    renderChat();
-    saveSession();
-  }else if(data.type === "PROMISE_REJECT"){
-    sessionData.messages.push({
-      role:"assistant",
-      content:`🟡Promise异常：${data.msg}`,
-      error:true
-    });
-    renderChat();
-    saveSession();
+window.addEventListener('message',evt=>{
+  const d=evt.data;
+  if(!d||!d.type) return;
+  const map={
+    WARN_NAN:"🔴运行时告警："+d.msg,
+    RUNTIME_ERROR:`🟡运行时异常：${d.msg} 行:${d.line||''}`,
+    PROMISE_REJECT:`🟡Promise异常：${d.msg}`
+  };
+  if(map[d.type]){
+    AppState.sessionData.messages.push({role:"assistant",content:map[d.type],error:true});
+    renderChat(); saveSession();
   }
 });
 
-/**
- * @param {number} msgIndex 消息下标
- * @param {string} status AGENT_STATUS
- */
-function renderAgentStatus(msgIndex, status){
-  const item = sessionData.messages[msgIndex];
-  item.agentStatus = status;
-  renderChat(msgIndex);
+function renderAgentStatus(msgIndex,status){
+  AppState.sessionData.messages[msgIndex].agentStatus=status;
+  renderChat();
 }
 
-function escapeHtml(str) {
-  if (!str) return "";
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace( />/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function escapeHtml(str){
+  if(!str) return "";
+  let s = String(str);
+  //超长简单截断保护
+  if(s.length>25000){
+    s = s.slice(0,25000)+"\n……(内容过长已截断)";
+  }
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
 }
-function isDrawPrompt(text){
-  return DRAW_KEYWORDS.some(k => text.includes(k));
-}
-async function testApiKey(key) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10000);
-  try {
-    const resp = await fetch(LLM_BASE_URL, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: MODEL_CODE,
-        messages: [{ role: "user", content: "hi" }],
-        max_tokens: 5
-      }),
-      signal: controller.signal
+
+const isDrawPrompt = text=> DRAW_KEYWORDS.some(k=>text.includes(k));
+
+async function testApiKey(key){
+  const c=new AbortController();
+  const t=setTimeout(()=>c.abort(),10000);
+  try{
+    const res=await fetch(CONST.LLM_BASE_URL,{
+      method:"POST",signal:c.signal,
+      headers:{"Authorization":`Bearer ${key}`,"Content-Type":"application/json"},
+      body:JSON.stringify({model:CONST.MODEL_CODE,messages:[{role:"user",content:"hi"}],max_tokens:5})
     });
-    clearTimeout(timer);
-    return resp.ok;
-  } catch (e) {
-    clearTimeout(timer);
-    return false;
-  }
+    clearTimeout(t);
+    if(!res.ok) return false;
+    //注意：http200不代表该key已开通对应模型权限，业务请求仍可能报错
+    return true;
+  }catch(e){ clearTimeout(t); return false; }
 }
-function backToKeyModal() {
-  LLM_API_KEY = "";
-  mainAppWrap.classList.add("hidden");
-  apiKeyModal.classList.remove("hidden");
-  apiKeyInput.value = "";
-  modalTip.textContent = "";
+
+function backToKeyModal(){
+  AppState.LLM_API_KEY="";
+  Dom.mainAppWrap.classList.add("hidden");
+  Dom.apiKeyModal.classList.remove("hidden");
+  Dom.apiKeyInput.value="";
+  Dom.modalTip.textContent="";
 }
-async function initKeyFlow() {
-  const saved = localStorage.getItem(STORAGE_API_KEY);
-  if (saved) {
-    LLM_API_KEY = saved;
-    const ok = await testApiKey(LLM_API_KEY);
-    if (ok) {
-      enterMainApp();
-      return;
-    } else {
-      localStorage.removeItem(STORAGE_API_KEY);
-    }
+
+async function initKeyFlow(){
+  const saved=localStorage.getItem(CONST.STORAGE_API_KEY);
+  if(saved){
+    AppState.LLM_API_KEY=saved;
+    const ok=await testApiKey(AppState.LLM_API_KEY);
+    if(ok){ enterMainApp(); return; }
+    localStorage.removeItem(CONST.STORAGE_API_KEY);
   }
-  apiKeyModal.classList.remove("hidden");
+  Dom.apiKeyModal.classList.remove("hidden");
 }
-modalConnectBtn.onclick = async () => {
-  const val = apiKeyInput.value.trim();
-  if (!val) {
-    modalTip.textContent = "请输入API Key";
-    modalTip.className = "text-sm mb-3 h-5 text-red-400";
-    return;
+
+Dom.modalConnectBtn.onclick=async()=>{
+  const val=Dom.apiKeyInput.value.trim();
+  if(!val){ Dom.modalTip.textContent="请输入API Key"; Dom.modalTip.className="text-sm mb-3 h-5 text-red-400"; return; }
+  Dom.modalConnectBtn.disabled=true; Dom.modalConnectBtn.textContent="正在验证..."; Dom.modalTip.textContent="";
+  AppState.LLM_API_KEY=val;
+  const ok=await testApiKey(val);
+  if(ok){
+    localStorage.setItem(CONST.STORAGE_API_KEY,val);
+    Dom.modalTip.textContent="✅ 验证成功（注意：需要账户开通对应模型权限）"; Dom.modalTip.className="text-sm mb-3 h-5 text-green-400";
+    setTimeout(enterMainApp,600);
+  }else{
+    Dom.modalTip.textContent="❌ Key校验失败，请检查"; Dom.modalTip.className="text-sm mb-3 h-5 text-red-400";
   }
-  modalConnectBtn.disabled = true;
-  modalConnectBtn.textContent = "正在验证...";
-  modalTip.textContent = "";
-  LLM_API_KEY = val;
-  const ok = await testApiKey(val);
-  if (ok) {
-    localStorage.setItem(STORAGE_API_KEY, val);
-    modalTip.textContent = "✅ 验证成功";
-    modalTip.className = "text-sm mb-3 h-5 text-green-400";
-    setTimeout(enterMainApp, 600);
-  } else {
-    modalTip.textContent = "❌ Key校验失败，请检查";
-    modalTip.className = "text-sm mb-3 h-5 text-red-400";
-  }
-  modalConnectBtn.disabled = false;
-  modalConnectBtn.textContent = "验证并进入应用";
+  Dom.modalConnectBtn.disabled=false; Dom.modalConnectBtn.textContent="验证并进入应用";
 };
-function enterMainApp() {
-  apiKeyModal.classList.add("hidden");
-  mainAppWrap.classList.remove("hidden");
-  bootstrapApp();
-}
-document.getElementById("clearApiKeyBtn").onclick = () => {
+
+function enterMainApp(){ Dom.apiKeyModal.classList.add("hidden"); Dom.mainAppWrap.classList.remove("hidden"); bootstrapApp(); }
+
+Dom.clearApiKeyBtn.onclick=()=>{
   if(!confirm("确定清除本地保存的APIKey吗？")) return;
-  localStorage.removeItem(STORAGE_API_KEY);
-  backToKeyModal();
+  localStorage.removeItem(CONST.STORAGE_API_KEY); backToKeyModal();
 };
 
-let sessionData = {
-  messages: [],
-  generatedCode: "",
-  lastProductReport:""
-};
-
-const colLeft = document.getElementById("colLeft");
-const colMiddle = document.getElementById("colMiddle");
-const chatContainer = document.getElementById("chatContainer");
-const userInput = document.getElementById("userInput");
-const sendBtn = document.getElementById("sendBtn");
-const newSessionBtn = document.getElementById("newSessionBtn");
-const clearChatBtn = document.getElementById("clearChatBtn");
-const codeEditor = document.getElementById("codeEditor");
-const previewIframe = document.getElementById("previewIframe");
-const exportBtn = document.getElementById("exportBtn");
-const reviewBtn = document.getElementById("reviewBtn");
-
-// ========= System Prompt 定义 =========
+// ========= System Prompt =========
 const productAgentSystemPrompt = `你是资深产品经理Agent，负责对用户网页需求做需求分析与确认。
 任务：阅读用户原始需求，输出结构化需求分析文档。
 输出格式：
@@ -409,48 +327,7 @@ const productAgentSystemPrompt = `你是资深产品经理Agent，负责对用�
 列举空输入、越界、数值计算、状态异常场景，开发时需要规避NaN、undefined等问题
 要求：只做需求分析，**不要写HTML、不要写代码**。输出清晰简洁，给后续工程师作为开发依据。`;
 
-const systemPrompt = `你是前端工程师Agent。参考【产品需求分析报告】+用户原始需求，严格按格式输出完整网页。
-输出格式：
-【思考】
-简短实现思路，一句话概括
-【HTML】
-完整可独立运行HTML，从<!DOCTYPE html>开始，必须输出到</html>结束，禁止提前截断输出。
-⚠️强制规则：
-1. CSS、JS全部内嵌，禁止外部CDN、外部图片、网络请求。
-2. 需要图形只用CSS绘制div，禁止img、svg标签。
-3. </html>后面不能附带任何文字、注释。
-4. 代码必须完整可交互，不要伪代码，不要省略逻辑。
-5. ⚠️JS数值处理：必须防范产生NaN；数值运算前校验变量不为undefined/null；除法、数学运算做边界判断；渲染页面时禁止直接输出NaN字符串到DOM。`;
-
-const simpleModeSystemPrompt = `你是前端工程师Agent，直接根据用户需求编写完整网页。
-输出格式：
-【思考】
-简短实现思路，一句话概括
-【HTML】
-完整可独立运行HTML，从<!DOCTYPE html>开始，必须输出到</html>结束，禁止提前截断输出。
-⚠️强制规则：
-1. CSS、JS全部内嵌，禁止外部CDN、外部图片、网络请求。
-2. 需要图形只用CSS绘制div，禁止img、svg标签。
-3. </html>后面不能附带任何文字、注释。
-4. 代码必须完整可交互，不要伪代码，不要省略逻辑。
-5. ⚠️JS数值处理：必须防范产生NaN；数值运算前校验变量不为undefined/null；除法、数学运算做边界判断；渲染页面时禁止直接输出NaN字符串到DOM。`;
-
-const testReviewSystemPrompt = `你是软件测试工程师，对传入的完整网页HTML代码做代码评审。
-任务：只做审查，不要修改代码，不要输出完整HTML。
-输出格式：
-### 代码评审报告
-【语法风险】：列出JS/CSS/HTML语法相关问题，无则写“未发现”
-【交互&事件风险】：按钮、键盘、输入框、点击、键盘监听等事件绑定、执行逻辑缺陷
-【业务逻辑风险】：业务算法、状态更新、数据处理、边界条件异常（空值、越界、重复执行、⚠️NaN、undefined参与数值运算）
-【UI渲染风险】：DOM渲染缺失、样式异常、布局错乱、元素直接渲染出NaN/undefined文本到页面上等
-【其他潜在风险】：其他隐患
-每条问题标注风险等级：🔴高 / 🟡中 / 🟢低。
-只要报告中存在🔴高 / 🟡中风险就代表需要修复。
-如果代码存在数值运算，重点检查是否会产生NaN，是否直接把NaN渲染到DOM。
-如果没有问题，如实写“未检测到明显缺陷，但不代表逻辑完全正确，仍需要手动实际测试”。
-不要编造不存在的bug。不要输出修复后的代码。`;
-
-const productVerifySystemPrompt = `你是产品经理Agent。
+const productVerifySystemPrompt = `你是资深产品经理Agent。
 已有【需求分析报告】和【代码评审报告】，同时网页已经渲染完成。
 你的任务：对比评审报告与原始需求，确认当前实现与需求分析报告是否一致；识别中风险及以上问题是否影响产品需求。
 输出格式：
@@ -462,7 +339,49 @@ const productVerifySystemPrompt = `你是产品经理Agent。
 列出所有中风险🔴🟡、高风险🔴缺陷对应的业务影响，交给前端工程师修复。若无中高风险，则写：无需要修复的中/高风险问题。
 不要输出HTML代码，只输出复核分析文本。`;
 
-const fixCodeSystemPrompt = `你是前端工程师。你会收到原始HTML代码 + 产品复核报告，报告中列出需要修复的中风险、高风险问题。
+const systemPrompt = `你是资深前端工程师Agent。参考【产品需求分析报告】+用户原始需求，严格按格式输出完整网页。
+输出格式：
+【思考】
+简短实现思路，一句话概括
+【HTML】
+完整可独立运行HTML，从<!DOCTYPE html>开始，必须输出到</html>结束，禁止提前截断输出。
+⚠️强制规则：
+1. CSS、JS全部内嵌，禁止外部CDN、外部图片、网络请求。
+2. 需要图形只用CSS绘制div，禁止img、svg标签。
+3. </html>后面不能附带任何文字、注释。
+4. 代码必须完整可交互，不要伪代码，不要省略逻辑。
+5. ⚠️JS数值处理：必须防范产生NaN；数值运算前校验变量不为undefined/null；除法、数学运算做边界判断；渲染页面时禁止直接输出NaN字符串到DOM。`;
+
+const simpleModeSystemPrompt = `你是资深前端工程师Agent，直接根据用户需求编写完整网页。
+输出格式：
+【思考】
+简短实现思路，一句话概括
+【HTML】
+完整可独立运行HTML，从<!DOCTYPE html>开始，必须输出到</html>结束，禁止提前截断输出。
+⚠️强制规则：
+1. CSS、JS全部内嵌，禁止外部CDN、外部图片、网络请求。
+2. 需要图形只用CSS绘制div，禁止img、svg标签。
+3. </html>后面不能附带任何文字、注释。
+4. 代码必须完整可交互，不要伪代码，不要省略逻辑。
+5. ⚠️JS数值处理：必须防范产生NaN；数值运算前校验变量不为undefined/null；除法、数学运算做边界判断；渲染页面时禁止直接输出NaN字符串到DOM。`;
+
+const testReviewSystemPrompt = `你是资深软件测试工程师，对传入的完整网页HTML代码做代码评审，并检查逻辑是否符合【产品需求分析报告】。
+任务：只做审查，不要修改代码，不要输出完整HTML。
+必须覆盖下面4个强制校验点：JS核心数据、渲染功能、业务函数、交互事件。
+输出格式：
+### 代码评审报告
+【JS核心数据】：检查全局/局部状态变量、初始值、边界值，是否存在undefined、null参与运算，是否会产生NaN。无则写“未发现”
+【渲染功能】：DOM生成、更新、清空、条件渲染逻辑；禁止直接把NaN、undefined渲染输出到页面DOM文本。无则写“未发现”
+【业务函数】：业务逻辑函数入参校验、返回值、异常分支判断，是否缺少边界防护。无则写“未发现”
+【交互事件】：click、input、keydown等事件绑定/解绑、重复触发、事件参数合法性、空值防护。无则写“未发现”
+【语法风险】：列出JS/CSS/HTML语法相关问题，无则写“未发现”
+每条问题标注风险等级：🔴高 / 🟡中 / 🟢低。
+只要报告中存在🔴高 / 🟡中风险就代表需要修复。
+重点检查是否会产生NaN，是否直接把NaN渲染到DOM。
+如果没有问题，如实写“未检测到明显缺陷，但不代表逻辑完全正确，仍需要手动实际测试”。
+不要编造不存在的bug。不要输出修复后的代码。`;
+
+const fixCodeSystemPrompt = `你是资深前端工程师。你会收到原始HTML代码 + 产品复核报告，报告中列出需要修复的中风险、高风险问题。
 任务：根据复核报告修复全部中风险、高风险缺陷。严格遵守输出格式。
 输出格式：
 【思考】
@@ -476,494 +395,416 @@ const fixCodeSystemPrompt = `你是前端工程师。你会收到原始HTML代�
 4. 保留原有产品需求与UI，只修复报告中提到的中高风险bug，不要改变业务功能。
 5. 不要伪代码，保证交互逻辑完整。`;
 
-// ==========【轻量增强容错解析器】==========
 function parseThinkAndHtml(rawText) {
-  const thinkMark = "【思考】";
-  const htmlMark = "【HTML】";
-  let thinkText = "";
-  let htmlText = "";
-  let isTruncated = false;
-  const idxThink = rawText.indexOf(thinkMark);
-  const idxHtml = rawText.indexOf(htmlMark);
-  if(idxThink !== -1 && idxHtml !== -1 && idxHtml > idxThink){
-    thinkText = rawText.substring(idxThink + thinkMark.length, idxHtml).trim();
-    const htmlRaw = rawText.substring(idxHtml + htmlMark.length).trim();
-    const startHtml = htmlRaw.indexOf('<!DOCTYPE html>');
-    const endHtml = htmlRaw.lastIndexOf('</html>');
-    if (startHtml !== -1 && endHtml !== -1) {
-      htmlText = htmlRaw.substring(startHtml, endHtml + 7).trim();
-    } else if(startHtml !== -1){
-      htmlText = htmlRaw.substring(startHtml).trim();
-      isTruncated = true;
-    }
+  const thinkMark="【思考】",htmlMark="【HTML】";
+  let thinkText="",htmlText="",isTruncated=false;
+  const idxThink=rawText.indexOf(thinkMark),idxHtml=rawText.indexOf(htmlMark);
+  if(idxThink!==-1&&idxHtml!==-1&&idxHtml>idxThink){
+    thinkText=rawText.substring(idxThink+thinkMark.length,idxHtml).trim();
+    const htmlRaw=rawText.substring(idxHtml+htmlMark.length).trim();
+    const s=htmlRaw.indexOf('<!DOCTYPE html>'),e=htmlRaw.lastIndexOf('</html>');
+    if(s!==-1&&e!==-1) htmlText=htmlRaw.substring(s,e+7).trim();
+    else if(s!==-1){ htmlText=htmlRaw.substring(s).trim(); isTruncated=true; }
   }else{
-    const startHtml = rawText.indexOf('<!DOCTYPE html>');
-    const endHtml = rawText.lastIndexOf('</html>');
-    if (startHtml !== -1 && endHtml !== -1) {
-      htmlText = rawText.substring(startHtml, endHtml + 7).trim();
-    }else if(startHtml !== -1){
-      htmlText = rawText.substring(startHtml).trim();
-      isTruncated = true;
-    }
-    thinkText = rawText.replace(htmlText,"").trim();
+    const s=rawText.indexOf('<!DOCTYPE html>'),e=rawText.lastIndexOf('</html>');
+    if(s!==-1&&e!==-1) htmlText=rawText.substring(s,e+7).trim();
+    else if(s!==-1){ htmlText=rawText.substring(s).trim(); isTruncated=true; }
+    thinkText=rawText.replace(htmlText,"").trim();
   }
-  return {thinkText, htmlText, isTruncated};
+  return {thinkText,htmlText,isTruncated};
 }
 
-// ========== JS语法预检模块 ==========
-function preCheckJsSyntax(fullHtml) {
-  const scriptReg = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
-  let match;
-  const jsBlocks = [];
-  while ((match = scriptReg.exec(fullHtml)) !== null) {
-    jsBlocks.push(match[1]);
+// 优化preCheckJsSyntax，增加内联事件提示；兼容顶层await/import
+function preCheckJsSyntax(fullHtml){
+  const reg=/<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let match,blocks=[];
+  while((match=reg.exec(fullHtml))!==null) blocks.push(match[1]);
+
+  //简单识别内联事件
+  if(/on\w+="/.test(fullHtml)){
+    return {ok:true,msg:"JS语法校验：检测到HTML内联事件，无法做静态语法校验，请预览测试",error:null};
   }
-  if (jsBlocks.length === 0) {
-    return {ok:true, msg:"未检测到JS代码", error:null};
-  }
-  for(const js of jsBlocks){
+
+  if(blocks.length===0) return {ok:true,msg:"未检测到JS代码",error:null};
+  for(const js of blocks){
     try{
-      new Function(js);
+      const fakeCode = "(function(){\n"+js+"\n})()";
+      new Function(fakeCode);
     }catch(err){
-      return {
-        ok:false,
-        msg:`JS语法检测失败：${err.message}`,
-        error:err
+      if(err.message.includes("await")||err.message.includes("import")){
+        return {ok:true,msg:"JS语法校验：存在顶层await/import，newFunction无法校验，跳过",error:null};
       }
+      return {ok:false,msg:`JS语法检测失败：${err.message}`,error:err};
     }
   }
-  return {ok:true, msg:"JS语法校验通过（⚠️仅语法，不校验业务/交互算法逻辑）", error:null};
+  return {ok:true,msg:"JS语法校验通过（⚠️仅语法，不校验业务/交互算法逻辑）",error:null};
 }
 
-// 判断报告是否存在中风险或更高
-function hasMediumOrHighRisk(reportText){
-  return reportText.includes("🔴高") || reportText.includes("🟡中");
-}
+const hasMediumOrHighRisk=r=> r.includes("🔴高")||r.includes("🟡中");
 
-function loadSession() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      sessionData = JSON.parse(saved);
-    }
-  } catch (e) {
-    console.warn("会话数据损坏，重置会话");
-    sessionData = { messages: [], generatedCode: "", lastProductReport:"" };
-  }
+function loadSession(){
+  try{
+    const s=localStorage.getItem(CONST.STORAGE_KEY);
+    if(s) AppState.sessionData=JSON.parse(s);
+  }catch(e){ AppState.sessionData={messages:[],generatedCode:"",lastProductReport:""}; }
+  resetAgentLoadingStatus();
   renderChat();
-  codeEditor.value = sessionData.generatedCode;
-  renderPreview(sessionData.generatedCode);
+  Dom.codeEditor.value=AppState.sessionData.generatedCode;
+  renderPreview(AppState.sessionData.generatedCode);
 }
-function saveSession() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
-  } catch (err) {
-    console.warn("localStorage存储超限，保存会话失败", err);
+
+function saveSession(){
+  //简易消息截断，防止无限膨胀
+  if(AppState.sessionData.messages.length > CONST.MAX_SESSION_MSG_COUNT){
+    AppState.sessionData.messages = AppState.sessionData.messages.slice(-CONST.MAX_SESSION_MSG_COUNT);
+  }
+  try{
+    localStorage.setItem(CONST.STORAGE_KEY,JSON.stringify(AppState.sessionData));
+  }catch(err){
+    console.warn("localStorage存储超限",err);
+    AppState.sessionData.messages.push({role:"assistant",content:"⚠️本地存储已满，会话无法保存，刷新后会丢失对话",error:true});
+    renderChat();
   }
 }
 
-function renderChat(loadingIndex = -1) {
-  chatContainer.innerHTML = "";
-  sessionData.messages.forEach((msg, index) => {
-    const div = document.createElement("div");
+function renderChat(){
+  Dom.chatContainer.innerHTML="";
+  AppState.sessionData.messages.forEach((msg)=>{
+    const div=document.createElement("div");
     div.classList.add("msg-fade-in");
-    if (msg.role === "user") {
-      div.className += " bg-blue-800 p-3 rounded-md text-white";
-      div.innerHTML = `<div class="text-sm opacity-80 mb-1">你</div>${escapeHtml(msg.content)}`;
-    } else {
+    if(msg.thinkType){
+      div.className+=" bg-gray-700 p-3 rounded-md text-white think-msg";
+      div.innerHTML=`<div class="text-sm text-blue-300 mb-1">${escapeHtml(msg.thinkTypeLabel)}</div><div class="whitespace-pre-wrap text-sm">${escapeHtml(msg.content)}</div>`;
+    }else if(msg.role==="user"){
+      div.className+=" bg-blue-800 p-3 rounded-md text-white";
+      div.innerHTML=`<div class="text-sm opacity-80 mb-1">你</div>${escapeHtml(msg.content)}`;
+    }else{
       if(msg.agentStatus){
-        div.className += " bg-gray-700 p-3 rounded-md text-white";
-        let html = `<div class="text-sm opacity-80 mb-1">多智能体</div>`;
-        if(msg.agentStatus === AGENT_STATUS.PRODUCT){
-          html += `
-<div class="agent‑status‑item">
-  <i class="fa fa-cubes spin text‑blue‑400"></i>
-  <span>产品 Agent 正在拆解需求</span>
-  <div class="pulse‑dot flex gap‑1"><span>.</span><span>.</span><span>.</span></div>
-</div>`;
-        }else if(msg.agentStatus === AGENT_STATUS.ENGINEER){
-          html += `
-<div class="agent‑status‑item">
-  <i class="fa fa‑code spin text‑green‑400"></i>
-  <span>工程师 Agent 正在写代码</span>
-  <div class="pulse‑dot flex gap‑1"><span>.</span><span>.</span><span>.</span></div>
-</div>`;
-        }else if(msg.agentStatus === AGENT_STATUS.TESTER_REVIEW){
-          html += `
-<div class="agent‑status‑item">
-  <i class="fa fa‑search spin text‑orange‑400"></i>
-  <span>测试 正在评审代码</span>
-  <div class="pulse‑dot flex gap‑1"><span>.</span><span>.</span><span>.</span></div>
-</div>`;
-        }else if(msg.agentStatus === AGENT_STATUS.PRODUCT_VERIFY){
-          html += `
-<div class="agent‑status‑item">
-  <i class="fa fa‑clipboard‑check spin text‑cyan‑400"></i>
-  <span>产品 正在分析结果</span>
-  <div class="pulse‑dot flex gap‑1"><span>.</span><span>.</span><span>.</span></div>
-</div>`;
-        }else if(msg.agentStatus === AGENT_STATUS.DONE){
-          html += `<div class="flex items‑center gap‑1"><i class="fa fa‑check text‑green‑400"></i> ${escapeHtml(msg.content)}</div>`;
-        }
-        div.innerHTML = html;
-      }else if (loadingIndex === index) {
-        div.className += " bg-gray-700 p-3 rounded-md text-white";
-        div.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-2"><i class="fa fa-circle-o-notch spin text-lg"></i> 正在生成代码，请稍候…</div>`;
-      } else if (msg.error) {
-        div.className += " bg-red-900/70 p-3 rounded-md text-white";
-        div.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-times"></i> ${escapeHtml(msg.content)}</div>`;
-      } else {
-        div.className += " bg-gray-700 p-3 rounded-md text-white";
-        div.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(msg.content)}</div>`;
+        div.className+=" bg-gray-700 p-3 rounded-md text-white";
+        const statusUi={
+          [CONST.AGENT_STATUS.PRODUCT]:`<i class="fa fa-cubes spin text-blue-400"></i><span>产品 Agent 正在拆解需求</span>`,
+          [CONST.AGENT_STATUS.ENGINEER]:`<i class="fa fa-code spin text-green-400"></i><span>工程师 Agent 正在写代码</span>`,
+          [CONST.AGENT_STATUS.TESTER_REVIEW]:`<i class="fa fa-search spin text-orange-400"></i><span>测试 正在评审代码</span>`,
+          [CONST.AGENT_STATUS.PRODUCT_VERIFY]:`<i class="fa fa-clipboard-check spin text-cyan-400"></i><span>产品 正在分析结果</span>`,
+          [CONST.AGENT_STATUS.DONE]:`<i class="fa fa-check text-green-400"></i> ${escapeHtml(msg.content)}`
+        };
+        const dotHtml=`<div class="pulse-dot flex gap-1"><span>.</span><span>.</span><span>.</span></div>`;
+        div.innerHTML=`<div class="text-sm opacity-80 mb-1">多智能体</div>`+
+          (msg.agentStatus===CONST.AGENT_STATUS.DONE
+            ?`<div class="flex items-center gap-1">${statusUi[msg.agentStatus]}</div>`
+            :`<div class="agent-status-item">${statusUi[msg.agentStatus]}${dotHtml}</div>`);
+      }else if(msg.error){
+        div.className+=" bg-red-900/70 p-3 rounded-md text-white";
+        div.innerHTML=`<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-times"></i> ${escapeHtml(msg.content)}</div>`;
+      }else{
+        div.className+=" bg-gray-700 p-3 rounded-md text-white";
+        div.innerHTML=`<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(msg.content)}</div>`;
       }
     }
-    chatContainer.appendChild(div);
-  })
-  chatContainer.scrollTop = chatContainer.scrollHeight;
+    Dom.chatContainer.appendChild(div);
+  });
+  Dom.chatContainer.scrollTop=Dom.chatContainer.scrollHeight;
 }
 
-async function typeWriter(element, fullText, speed = 45) {
-  isTyping = true;
-  try {
-    let currentText = "";
-    for (let i = 0; i < fullText.length; i++) {
-      if(!isTyping) break;
-      currentText += fullText[i];
-      element.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(currentText)}<span class="opacity-70">|</span></div>`;
-      await new Promise(resolve => setTimeout(resolve, speed));
+async function typeWriter(element,fullText,speed=45){
+  AppState.isTyping=true;
+  try{
+    let cur="";
+    for(let i=0;i<fullText.length;i++){
+      if(!AppState.isTyping || AppState.isManualAbort || AppState.forceTerminateRender) break;
+      cur+=fullText[i];
+      element.innerHTML=`<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(cur)}<span class="opacity-70">|</span></div>`;
+      await new Promise(r=>setTimeout(r,speed));
     }
-    if(isTyping){
-      element.innerHTML = `<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(fullText)}</div>`;
+    if(AppState.isTyping && !AppState.isManualAbort && !AppState.forceTerminateRender){
+      element.innerHTML=`<div class="text-sm opacity-80 mb-1">AI智能体</div><div class="flex items-center gap-1"><i class="fa fa-check text-green-400"></i> ${escapeHtml(fullText)}</div>`;
     }
-  } finally {
-    isTyping = false;
-  }
+  }finally{ AppState.isTyping=false; }
 }
 
-// 注入iframe运行时监控脚本，检测DOM出现NaN、捕获异常
-function renderPreview(html) {
-  const injectMonitor = `
-<script>
-(function(){
-  const observer = new MutationObserver((mutations)=>{
-    for(let m of mutations){
-      for(let n of m.addedNodes){
-        if(n.nodeType===1){
-          if(n.textContent && n.textContent.includes("NaN")){
-            parent.postMessage({type:"WARN_NAN",msg:"⚠️预览页面检测到DOM渲染出NaN文本，代码存在数值计算bug"},'*');
-          }
-        }
-        if(n.nodeType===3){
-          if(n.textContent && n.textContent.includes("NaN")){
-            parent.postMessage({type:"WARN_NAN",msg:"⚠️预览页面检测到DOM渲染出NaN文本，代码存在数值计算bug"},'*');
-          }
-        }
-      }
-    });
-    observer.observe(document.body,{childList:true,subtree:true,characterData:true});
-    window.onerror = function(msg,url,line,col,err){
-      parent.postMessage({type:"RUNTIME_ERROR",msg:String(msg),line,col},'*');
-    };
-    window.addEventListener('unhandledrejection',e=>{
-      parent.postMessage({type:"PROMISE_REJECT",msg:e.reason?.message||String(e.reason)},'*');
-    })
-})();
-<\/script>
-`;
-  let finalHtml;
-  const headIdx = html.indexOf("<head>");
-  if(headIdx !==-1){
-    finalHtml = html.slice(0,headIdx+6) + injectMonitor + html.slice(headIdx+6);
-  }else{
-    finalHtml = injectMonitor + html;
+async function showAgentThink(label,rawText){
+  AppState.sessionData.messages.push({role:"assistant",thinkType:true,thinkTypeLabel:label,content:rawText});
+  renderChat();
+  const el=Dom.chatContainer.lastElementChild;
+  AppState.isTyping=true; let cur="";
+  for(let i=0;i<rawText.length;i++){
+    if(!AppState.isTyping || AppState.isManualAbort || AppState.forceTerminateRender) break;
+    cur+=rawText[i];
+    el.innerHTML=`<div class="text-sm text-blue-300 mb-1">${escapeHtml(label)}</div><div class="whitespace-pre-wrap text-sm">${escapeHtml(cur)}<span class="opacity-70">|</span></div>`;
+    Dom.chatContainer.scrollTop=Dom.chatContainer.scrollHeight;
+    await new Promise(r=>setTimeout(r,30));
   }
-  sessionData.generatedCode = html;
-  codeEditor.value = html;
+  if(!AppState.forceTerminateRender){
+    el.innerHTML=`<div class="text-sm text-blue-300 mb-1">${escapeHtml(label)}</div><div class="whitespace-pre-wrap text-sm">${escapeHtml(rawText)}</div>`;
+  }
   saveSession();
-  previewIframe.srcdoc = finalHtml;
 }
 
-// 通用LLM调用，支持自定义systemPrompt
-async function callGLMWithSysPrompt(prompt, sysPrompt, isDraw=false) {
-  globalAbortController = new AbortController();
-  const model = isDraw ? MODEL_DRAW : MODEL_CODE;
-  const messages = [
-    { role: "system", content: sysPrompt },
-    { role: "user", content: prompt }
-  ]
-  const controller = globalAbortController;
-  const timeoutId = setTimeout(() => controller.abort(), LLM_TIMEOUT_MS);
-  try {
-    const resp = await fetch(LLM_BASE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${LLM_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: messages,
-        temperature: LLM_TEMPERATURE
-      }),
-      signal: controller.signal
+// 只注入一次monitor脚本标记，避免重复注入
+function renderPreview(html){
+  const injectMonitor=`<script data-monitor-script="true">
+(function(){
+  if(window.__previewMonitorInited) return;
+  window.__previewMonitorInited = true;
+  const o=new MutationObserver(m=>{
+    m.forEach(mut=>{
+      mut.addedNodes.forEach(n=>{
+        if((n.nodeType===1||n.nodeType===3)&&n.textContent&&n.textContent.includes("NaN")){
+          parent.postMessage({type:"WARN_NAN",msg:"⚠️预览页面检测到DOM渲染出NaN文本，代码存在数值计算bug"},'*');
+        }
+      })
     })
-    clearTimeout(timeoutId);
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status}`);
-    }
-    const json = await resp.json();
-    if (!json.choices || json.choices.length === 0) {
-      throw new Error("模型返回异常");
-    }
+  });
+  o.observe(document.body,{childList:true,subtree:true,characterData:true});
+  window.onerror=(msg,url,line,col)=>parent.postMessage({type:"RUNTIME_ERROR",msg:String(msg),line,col},'*');
+  window.addEventListener('unhandledrejection',e=>parent.postMessage({type:"PROMISE_REJECT",msg:e.reason?.message||String(e.reason)},'*'));
+})();
+<\/script>`;
+  let finalHtml;
+  const headIdx=html.indexOf("<head>");
+  finalHtml= headIdx!==-1 ? html.slice(0,headIdx+6)+injectMonitor+html.slice(headIdx+6) : injectMonitor+html;
+  AppState.sessionData.generatedCode=html;
+  Dom.codeEditor.value=html;
+  saveSession();
+  Dom.previewIframe.srcdoc=finalHtml;
+}
+
+async function callGLMWithSysPrompt(prompt,sysPrompt,isDraw=false){
+  const controller = new AbortController();
+  AppState.globalAbortController = controller;
+  const model=isDraw?CONST.MODEL_DRAW:CONST.MODEL_CODE;
+  const messages=[{role:"system",content:sysPrompt},{role:"user",content:prompt}];
+  const t=setTimeout(()=>controller.abort(),CONST.LLM_TIMEOUT_MS);
+  try{
+    const resp=await fetch(CONST.LLM_BASE_URL,{
+      method:"POST",signal:controller.signal,
+      headers:{"Content-Type":"application/json","Authorization":`Bearer ${AppState.LLM_API_KEY}`},
+      body:JSON.stringify({model,messages,temperature:CONST.LLM_TEMPERATURE})
+    });
+    clearTimeout(t);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json=await resp.json();
+    if(!json.choices||!json.choices.length) throw new Error("模型返回异常");
     return json.choices[0].message.content.trim();
-  } catch (err) {
-    clearTimeout(timeoutId);
+  }catch(err){
+    clearTimeout(t);
+    if(controller.signal.aborted){
+      throw new ManualAbortError("请求被手动终止");
+    }
     throw err;
+  }finally{
+    if(AppState.globalAbortController === controller){
+      AppState.globalAbortController = null;
+    }
   }
 }
 
-// ==========【核心完整链路：产品→工程师→测试评审→产品复核→修复中/高风险】 ==========
-async function generateAndAutoFix(userPrompt, simpleMode){
-  let currentHtml = "";
-  let round = 0;
-  const assistMsgIdx = sessionData.messages.length;
-  sessionData.messages.push({role:"assistant", content:"", agentStatus: simpleMode ? AGENT_STATUS.ENGINEER : AGENT_STATUS.PRODUCT});
-  renderAgentStatus(assistMsgIdx, simpleMode ? AGENT_STATUS.ENGINEER : AGENT_STATUS.PRODUCT);
+async function generateAndAutoFix(userPrompt,simpleMode){
+  let currentHtml="",round=0;
+  const assistMsgIdx=AppState.sessionData.messages.length;
+  AppState.sessionData.messages.push({role:"assistant",content:"",agentStatus:simpleMode?CONST.AGENT_STATUS.ENGINEER:CONST.AGENT_STATUS.PRODUCT});
+  renderAgentStatus(assistMsgIdx,simpleMode?CONST.AGENT_STATUS.ENGINEER:CONST.AGENT_STATUS.PRODUCT);
+  let engineerInput,productReport="";
 
-  let engineerInput;
-  let productReport = "";
-  if(!simpleMode){
-    productReport = await callGLMWithSysPrompt(userPrompt, productAgentSystemPrompt);
-    sessionData.lastProductReport = productReport;
-    renderAgentStatus(assistMsgIdx, AGENT_STATUS.ENGINEER);
-    engineerInput = `用户原始需求：
+  if(simpleMode){
+    AppState.sessionData.lastProductReport = "";
+    engineerInput=userPrompt;
+  }else{
+    productReport=await callGLMWithSysPrompt(userPrompt,productAgentSystemPrompt);
+    await showAgentThink("🔹产品Agent思考",productReport);
+    AppState.sessionData.lastProductReport=productReport;
+    renderAgentStatus(assistMsgIdx,CONST.AGENT_STATUS.ENGINEER);
+    engineerInput=`用户原始需求：
 ${userPrompt}
 下面是产品经理输出的需求分析报告，请依据这份报告实现网页：
 ${productReport}`;
-  }else{
-    engineerInput = userPrompt;
   }
 
-  const raw = await callGLMWithSysPrompt(engineerInput, simpleMode ? simpleModeSystemPrompt : systemPrompt, isDrawPrompt(userPrompt));
-  let parsed = parseThinkAndHtml(raw);
-  currentHtml = parsed.htmlText;
-  const checkRet = preCheckJsSyntax(currentHtml);
-
-  let logMsg = "";
-  if(!simpleMode){
-    logMsg = "📋【产品需求分析报告】\n"+productReport+"\n\n"+(parsed.thinkText || "✅ 已生成网页应用代码");
-  }else{
-    logMsg = "⚡【简易模式：跳过产品分析】\n"+(parsed.thinkText || "✅ 已生成网页应用代码");
-  }
-  if(parsed.isTruncated) logMsg += "\n⚠️警告：模型输出被截断，代码不完整，请手动补全";
-  if(!checkRet.ok){
-    logMsg += `\n⚠️【JS语法错误预警】${checkRet.msg}，预览大概率交互异常`;
-  }else{
-    logMsg += `\n【JS预检】${checkRet.msg}`;
-  }
-
-  renderAgentStatus(assistMsgIdx, AGENT_STATUS.DONE);
-  sessionData.messages[assistMsgIdx].content = logMsg;
+  const rawEngineer=await callGLMWithSysPrompt(engineerInput,simpleMode?simpleModeSystemPrompt:systemPrompt,isDrawPrompt(userPrompt));
+  await showAgentThink("🔹工程师Agent思考",rawEngineer);
+  let parsed=parseThinkAndHtml(rawEngineer);
+  currentHtml=parsed.htmlText;
+  const checkRet=preCheckJsSyntax(currentHtml);
+  let logMsg=simpleMode
+    ?"⚡【简易模式：跳过产品分析】\n"+(parsed.thinkText||"✅ 已生成网页应用代码")
+    :"📋【产品需求分析报告】\n"+productReport+"\n\n"+(parsed.thinkText||"✅ 已生成网页应用代码");
+  if(parsed.isTruncated) logMsg+="\n⚠️警告：模型输出被截断，代码不完整，请手动补全";
+  logMsg+= checkRet.ok ?`\n【JS预检】${checkRet.msg}`:`\n⚠️【JS语法错误预警】${checkRet.msg}，预览大概率交互异常`;
+  renderAgentStatus(assistMsgIdx,CONST.AGENT_STATUS.DONE);
+  AppState.sessionData.messages[assistMsgIdx].content=logMsg;
   renderChat();
-  let msgDom = chatContainer.lastElementChild;
-  await typeWriter(msgDom, logMsg);
+  await typeWriter(Dom.chatContainer.lastElementChild,logMsg);
   renderPreview(currentHtml);
 
-  // 循环：评审 -> 产品复核 -> 修复中/高风险
-  while(round < MAX_FIX_RETRY && isTyping){
-    round +=1;
-    // 1.测试评审
-    const reviewMsgIdx = sessionData.messages.length;
-    sessionData.messages.push({role:"assistant",content:"",agentStatus:AGENT_STATUS.TESTER_REVIEW});
-    renderAgentStatus(reviewMsgIdx,AGENT_STATUS.TESTER_REVIEW);
-    const reviewInput = `请评审下面网页代码:\n${currentHtml}`;
-    const reviewReport = await callGLMWithSysPrompt(reviewInput, testReviewSystemPrompt);
-    renderAgentStatus(reviewMsgIdx,AGENT_STATUS.DONE);
-    sessionData.messages[reviewMsgIdx].content = `====第${round}轮 测试评审报告====\n`+reviewReport;
-    renderChat();
-    msgDom = chatContainer.lastElementChild;
-    await typeWriter(msgDom, sessionData.messages[reviewMsgIdx].content);
+  while(round<CONST.MAX_FIX_RETRY){
+    round++;
+    if(AppState.isManualAbort || AppState.forceTerminateRender){
+      throw new ManualAbortError("生成流程被手动终止");
+    }
 
-    // 2.产品复核，对比需求分析报告
-    const verifyMsgIdx = sessionData.messages.length;
-    sessionData.messages.push({role:"assistant",content:"",agentStatus:AGENT_STATUS.PRODUCT_VERIFY});
-    renderAgentStatus(verifyMsgIdx,AGENT_STATUS.PRODUCT_VERIFY);
-    const verifyPrompt = `原始用户需求：${userPrompt}
+    const reviewMsgIdx=AppState.sessionData.messages.length;
+    AppState.sessionData.messages.push({role:"assistant",content:"",agentStatus:CONST.AGENT_STATUS.TESTER_REVIEW});
+    renderAgentStatus(reviewMsgIdx,CONST.AGENT_STATUS.TESTER_REVIEW);
+    const rawReview=await callGLMWithSysPrompt(`请评审下面网页代码:\n${currentHtml}`,testReviewSystemPrompt);
+    await showAgentThink("🔹测试Agent思考",rawReview);
+    renderAgentStatus(reviewMsgIdx,CONST.AGENT_STATUS.DONE);
+    AppState.sessionData.messages[reviewMsgIdx].content=`====第${round}轮 测试评审报告====\n`+rawReview;
+    renderChat();
+    await typeWriter(Dom.chatContainer.lastElementChild,AppState.sessionData.messages[reviewMsgIdx].content);
+
+    const verifyMsgIdx=AppState.sessionData.messages.length;
+    AppState.sessionData.messages.push({role:"assistant",content:"",agentStatus:CONST.AGENT_STATUS.PRODUCT_VERIFY});
+    renderAgentStatus(verifyMsgIdx,CONST.AGENT_STATUS.PRODUCT_VERIFY);
+    const verifyPrompt=`原始用户需求：${userPrompt}
 【需求分析报告】
-${simpleMode?"简易模式无产品需求报告":sessionData.lastProductReport}
+${simpleMode?"简易模式无产品需求报告":AppState.sessionData.lastProductReport}
 【代码测试评审报告】
-${reviewReport}
+${rawReview}
 请做产品复核，对比渲染实现和需求报告，识别中风险及以上问题业务影响。`;
-    const productVerifyResult = await callGLMWithSysPrompt(verifyPrompt, productVerifySystemPrompt);
-    renderAgentStatus(verifyMsgIdx,AGENT_STATUS.DONE);
-    sessionData.messages[verifyMsgIdx].content = `====第${round}轮 产品复核结果====\n`+productVerifyResult;
+    const rawVerify=await callGLMWithSysPrompt(verifyPrompt,productVerifySystemPrompt);
+    await showAgentThink("🔹产品复核Agent思考",rawVerify);
+    renderAgentStatus(verifyMsgIdx,CONST.AGENT_STATUS.DONE);
+    AppState.sessionData.messages[verifyMsgIdx].content=`====第${round}轮 产品复核结果====\n`+rawVerify;
     renderChat();
-    msgDom = chatContainer.lastElementChild;
-    await typeWriter(msgDom, sessionData.messages[verifyMsgIdx].content);
+    await typeWriter(Dom.chatContainer.lastElementChild,AppState.sessionData.messages[verifyMsgIdx].content);
 
-    // 判断是否存在中/高风险，无则退出循环
-    if(!hasMediumOrHighRisk(reviewReport)){
-      sessionData.messages.push({role:"assistant", content:"✅本轮评审+产品复核未检测到中/高风险缺陷，自动修复流程结束"});
+    if(!hasMediumOrHighRisk(rawReview)){
+      const txt="✅本轮评审+产品复核未检测到中/高风险缺陷，自动修复流程结束";
+      AppState.sessionData.messages.push({role:"assistant",content:txt});
       renderChat();
-      msgDom = chatContainer.lastElementChild;
-      await typeWriter(msgDom,"✅本轮评审+产品复核未检测到中/高风险缺陷，自动修复流程结束");
+      await typeWriter(Dom.chatContainer.lastElementChild,txt);
       break;
     }
-    if(round >= MAX_FIX_RETRY){
-      sessionData.messages.push({role:"assistant", content:`⚠️已经到达最大修复轮次${MAX_FIX_RETRY}，停止自动修复，请手动修改代码`});
+    if(round>=CONST.MAX_FIX_RETRY){
+      const txt=`⚠️已经到达最大修复轮次${CONST.MAX_FIX_RETRY}，停止自动修复，请手动修改代码`;
+      AppState.sessionData.messages.push({role:"assistant",content:txt});
       renderChat();
-      msgDom = chatContainer.lastElementChild;
-      await typeWriter(msgDom,`⚠️已经到达最大修复轮次${MAX_FIX_RETRY}，停止自动修复，请手动修改代码`);
+      await typeWriter(Dom.chatContainer.lastElementChild,txt);
       break;
     }
-
-    // 执行修复：依据产品复核报告修复中高风险
-    sessionData.messages.push({role:"assistant", content:`🔴🟡检测到中/高风险缺陷，开始执行第${round}轮自动修复`});
+    const fixTip=`🔴🟡检测到中/高风险缺陷，开始执行第${round}轮自动修复`;
+    AppState.sessionData.messages.push({role:"assistant",content:fixTip});
     renderChat();
-    msgDom = chatContainer.lastElementChild;
-    await typeWriter(msgDom,`🔴🟡检测到中/高风险缺陷，开始执行第${round}轮自动修复`);
+    await typeWriter(Dom.chatContainer.lastElementChild,fixTip);
 
-    const fixPrompt = `原始HTML代码：
+    const fixPrompt=`原始HTML代码：
 ${currentHtml}
 产品复核报告（需要修复中风险、高风险问题）：
-${productVerifyResult}
+${rawVerify}
 请根据报告修复全部中、高风险缺陷。`;
-    const fixRaw = await callGLMWithSysPrompt(fixPrompt, fixCodeSystemPrompt);
-    const fixParsed = parseThinkAndHtml(fixRaw);
-    currentHtml = fixParsed.htmlText;
-    const fixCheck = preCheckJsSyntax(currentHtml);
-
-    let fixLog = fixParsed.thinkText || "✅完成修复";
-    if(fixParsed.isTruncated) fixLog += "\n⚠️修复输出被截断";
-    if(!fixCheck.ok) fixLog +=`\n⚠️修复后JS语法错误：${fixCheck.msg}`;
-
-    sessionData.messages.push({role:"assistant", content:fixLog});
+    const rawFix=await callGLMWithSysPrompt(fixPrompt,fixCodeSystemPrompt);
+    await showAgentThink("🔹工程师Agent思考(修复)",rawFix);
+    const fixParsed=parseThinkAndHtml(rawFix);
+    currentHtml=fixParsed.htmlText;
+    const fixCheck=preCheckJsSyntax(currentHtml);
+    let fixLog=fixParsed.thinkText||"✅完成修复";
+    if(fixParsed.isTruncated) fixLog+="\n⚠️修复输出被截断";
+    if(!fixCheck.ok) fixLog+=`\n⚠️修复后JS语法错误：${fixCheck.msg}`;
+    AppState.sessionData.messages.push({role:"assistant",content:fixLog});
     renderChat();
-    msgDom = chatContainer.lastElementChild;
-    await typeWriter(msgDom, fixLog);
+    await typeWriter(Dom.chatContainer.lastElementChild,fixLog);
     renderPreview(currentHtml);
   }
   saveSession();
   return currentHtml;
 }
 
-// 发送按钮
-sendBtn.onclick = async () => {
-  const content = userInput.value.trim();
-  if (!content || isTyping) return;
-  if(sessionData.messages.length >=6){
-    if(!confirm("当前会话消息较多，容易超时/格式错乱，建议新建会话，是否继续发送？")){
-      return;
-    }
-  }
-  const simpleMode = simpleModeCheck.checked;
+Dom.sendBtn.onclick=async()=>{
+  const content=Dom.userInput.value.trim();
+  if(!content||AppState.isTyping) return;
+  if(!checkSessionMessageCount()) return;
+  resetRequestState();
+  const simpleMode=Dom.simpleModeCheck.checked;
   setUiBusy();
-  sessionData.messages.push({ role: "user", content });
-  userInput.value = "";
-  renderChat();
-  try {
-    isTyping = true;
-    await generateAndAutoFix(content, simpleMode);
-  } catch (err) {
-    let msg = err.message;
-    if(err.name === 'AbortError') msg = "请求已被手动停止";
-    sessionData.messages.push({ role: "assistant", content: "生成/修复失败：" + msg, error: true });
-    resetAgentLoadingStatus();
-    renderChat();
-  } finally {
-    setUiIdle();
-    isTyping = false;
-    saveSession();
-  }
-}
-
-// 手动评审按钮
-reviewBtn.onclick = async ()=>{
-  const codeText = codeEditor.value.trim();
-  if(!codeText){
-    alert("编辑器没有代码，无法执行评审");
-    return;
-  }
-  if(isTyping){
-    alert("正在处理请求，请等待完成");
-    return;
-  }
-  setUiBusy();
-  isTyping = true;
-  sessionData.messages.push({role:"user",content:"执行AI代码评审"});
-  sessionData.messages.push({role:"assistant",content:"loading"});
-  const loadingIdx = sessionData.messages.length -1;
-  renderChat(loadingIdx);
+  AppState.sessionData.messages.push({role:"user",content}); Dom.userInput.value=""; renderChat();
   try{
-    const reviewPrompt = `请评审下面网页代码:\n${codeText}`;
-    const report = await callGLMWithSysPrompt(reviewPrompt, testReviewSystemPrompt);
-    sessionData.messages[loadingIdx] = {role:"assistant", content: report};
-    renderChat();
-    const msgDom = chatContainer.lastElementChild;
-    await typeWriter(msgDom, report,25);
+    AppState.isTyping=true; await generateAndAutoFix(content,simpleMode);
   }catch(err){
-    let errMsg = err.name==='AbortError'?"评审请求已停止":"评审请求异常:"+err.message;
-    sessionData.messages[loadingIdx] = {role:"assistant", content:"评审失败："+errMsg, error:true};
-    resetAgentLoadingStatus();
+    const msg = err instanceof ManualAbortError ? "🛑请求已被手动停止" : ("生成/修复失败："+err.message);
+    AppState.sessionData.messages.push({role:"assistant",content:msg,error:true});
+    resetAgentLoadingStatus(); renderChat();
+  }finally{ setUiIdle(); AppState.isTyping=false; saveSession(); }
+};
+
+Dom.reviewBtn.onclick=async()=>{
+  const codeText=Dom.codeEditor.value.trim();
+  if(!codeText){ alert("编辑器没有代码，无法执行评审"); return; }
+  if(AppState.isTyping){ alert("正在处理请求，请等待完成"); return; }
+  if(!checkSessionMessageCount()) return;
+  resetRequestState();
+  setUiBusy();
+  AppState.sessionData.messages.push({role:"user",content:"执行AI代码评审"});
+  AppState.sessionData.messages.push({role:"assistant",content:"loading"});
+  const loadingIdx=AppState.sessionData.messages.length-1;
+  renderChat();
+  try{
+    const rawReview=await callGLMWithSysPrompt(`请评审下面网页代码:\n${codeText}`,testReviewSystemPrompt);
+    await showAgentThink("🔹测试Agent思考",rawReview);
+    AppState.sessionData.messages[loadingIdx]={role:"assistant",content:rawReview};
     renderChat();
-  }finally{
-    setUiIdle();
-    isTyping = false;
-    saveSession();
-  }
-}
+    await typeWriter(Dom.chatContainer.lastElementChild,rawReview,25);
+  }catch(err){
+    const errMsg = err instanceof ManualAbortError ? "🛑评审请求已被手动停止" : ("评审请求异常:"+err.message);
+    AppState.sessionData.messages[loadingIdx]={role:"assistant",content:errMsg,error:true};
+    resetAgentLoadingStatus(); renderChat();
+  }finally{ setUiIdle(); AppState.isTyping=false; saveSession(); }
+};
 
-userInput.addEventListener('keydown', function(e){
-  if(e.key === 'Enter' && !e.shiftKey){
+Dom.userInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey&&!AppState.isTyping){
     e.preventDefault();
-    sendBtn.click();
+    Dom.sendBtn.click();
   }
-})
+});
 
-newSessionBtn.onclick = () => {
-  if (isTyping) return;
-  sessionData = { messages: [], generatedCode: "", lastProductReport:"" };
+Dom.newSessionBtn.onclick=()=>{
+  //终止网络与渲染
+  AppState.forceTerminateRender = true;
+  if(AppState.globalAbortController){
+    AppState.isManualAbort=true;
+    AppState.globalAbortController.abort();
+    AppState.globalAbortController=null;
+  }
+  AppState.isTyping=false;
+  AppState.sessionData={messages:[],generatedCode:"",lastProductReport:""};
   saveSession();
   renderChat();
-  codeEditor.value = "";
-  previewIframe.srcdoc = "";
-}
+  Dom.codeEditor.value="";
+  Dom.previewIframe.srcdoc="";
+};
 
-clearChatBtn.onclick = () => {
-  if(isTyping) return;
-  sessionData.messages = [];
-  saveSession();
-  renderChat();
-}
+Dom.clearChatBtn.onclick=()=>{
+  if(AppState.isTyping) return;
+  AppState.sessionData.messages=[]; saveSession(); renderChat();
+};
 
-exportBtn.onclick = () => {
-  const html = codeEditor.value;
-  if (!html.trim()) {
-    exportBtn.textContent = "暂无代码";
-    setTimeout(() => exportBtn.innerHTML = `<i class="fa fa-download"></i> 导出HTML`, 1200);
+Dom.exportBtn.onclick=()=>{
+  const html=Dom.codeEditor.value;
+  if(!html.trim()){
+    Dom.exportBtn.classList.add("opacity-60");
+    const oldHtml = Dom.exportBtn.innerHTML;
+    Dom.exportBtn.innerHTML = `<i class="fa fa-download"></i> 暂无代码`;
+    setTimeout(()=>{
+      Dom.exportBtn.innerHTML = oldHtml;
+      Dom.exportBtn.classList.remove("opacity-60");
+    },1200);
     return;
   }
-  const blob = new Blob([html], { type: "text/html" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "output.html";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
+  const blob=new Blob([html],{type:"text/html"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="output.html"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
 
-codeEditor.oninput = () => {
-  renderPreview(codeEditor.value);
-}
+Dom.codeEditor.oninput=()=>{
+  AppState.sessionData.generatedCode = Dom.codeEditor.value;
+  renderPreview(Dom.codeEditor.value);
+};
 
-function bootstrapApp() {
-  loadSession();
-}
-window.onload = function () {
-  initKeyFlow();
-}
+function bootstrapApp(){ loadSession(); }
+
+window.onload=()=>initKeyFlow();
 </script>
 </body>
 </html>
